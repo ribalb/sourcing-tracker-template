@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", "Noto Sans Arabic", "Helvetica Neue",
+    Arial, sans-serif;
+
+  /* The logo wordmark: a Didone serif, with sensible fallbacks per platform. */
+  --font-display: "Didot", "Bodoni MT", "Playfair Display", "Times New Roman", Georgia, serif;
+
+  /* ---------------------------------------------------------------
+   * REBRAND: these five values carry the whole look.
+   * Sample them from the client's logo — 100 is the page background,
+   * 50 is a lighter panel, 200/300 are borders, ink is the text and
+   * the dark invoice card. Everything else follows from them.
+   * ------------------------------------------------------------- */
+  --color-cream-50: #faf6ef;
+  --color-cream-100: #f2e9da;
+  --color-cream-200: #e6d9c2;
+  --color-cream-300: #d4c3a4;
+  --color-ink: #14110d;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-cream-100);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Date inputs on iOS carry a wide intrinsic width and centre their value,
+ * which breaks them out of narrow grid cells. Force them to behave like a
+ * normal text field.
+ */
+input[type="date"] {
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: start;
+  margin: 0;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-inline-start: 0;
+  opacity: 0.45;
+}
+
+/* Keep number inputs clean on mobile */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Printing / "Save as PDF": paper is white, and rows must not split. */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  main {
+    max-width: none;
+    padding: 0;
+  }
+  tr,
+  thead {
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group; /* repeat the header on every page */
+  }
+  @page {
+    margin: 14mm;
+  }
+}
+
+/* Mirror the little back-arrow when the page flips to Arabic */
+[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}

@@ -1,0 +1,147 @@
+export const STATUSES = [
+  "requested",
+  "sourcing",
+  "found",
+  "bought",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+  "closed",
+  "canceled",
+] as const;
+
+export type Status = (typeof STATUSES)[number];
+
+/**
+ * Statuses that count towards money and profit.
+ * `closed` still counts — it is a completed sale, just archived.
+ */
+export const isBillable = (s: Status) => s !== "canceled";
+
+/**
+ * `closed` means finished and settled: it stays in your books but is not
+ * sent to the client's page, so a repeat customer sees only their current
+ * order. Filtered in the database, not here — see 007_closed_status.sql.
+ */
+export const isClosed = (s: Status) => s === "closed";
+
+export type Client = {
+  id: string;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  token: string;
+  created_at: string;
+};
+
+/** Full item — admin side only. Contains `cost`, which clients must never see. */
+export type Item = {
+  id: string;
+  client_id: string;
+  description: string;
+  specs: string | null;
+  budget: number | null;
+  status: Status;
+  cost: number | null;
+  price: number | null;
+  deposit: number;
+  note: string | null;
+  /** Storage paths, not URLs — see lib/photos.ts */
+  request_photo: string | null;
+  found_photo: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** What the public client page receives. No cost, no private note. */
+export type PublicItem = {
+  id: string;
+  description: string;
+  specs: string | null;
+  budget: number | null;
+  status: Status;
+  price: number | null;
+  deposit: number;
+  request_photo: string | null;
+  found_photo: string | null;
+  created_at: string;
+};
+
+/** Payment details, written by the owner in Settings. */
+export type PaymentInfo = {
+  en: string | null;
+  ar: string | null;
+  method: string | null;
+  account: string | null;
+  account_name: string | null;
+  whatsapp: string | null;
+};
+
+export type PublicView = {
+  client: { name: string };
+  payment: PaymentInfo | null;
+  items: PublicItem[];
+};
+
+export type RequestStatus = "pending" | "approved" | "rejected";
+
+/** A submission from the public form. Not a client and not an order yet. */
+export type ClientRequest = {
+  id: string;
+  name: string;
+  phone: string | null;
+  description: string;
+  specs: string | null;
+  budget: number | null;
+  photo: string | null;
+  status: RequestStatus;
+  client_id: string | null;
+  created_at: string;
+};
+
+export type Settings = {
+  id: boolean;
+  payment_note_en: string | null;
+  payment_note_ar: string | null;
+  pay_method: string | null;
+  pay_account: string | null;
+  pay_account_name: string | null;
+  owner_whatsapp: string | null;
+  updated_at: string;
+};
+
+export type Totals = {
+  billed: number;
+  cost: number;
+  profit: number;
+  deposits: number;
+  balance: number;
+  count: number;
+};
+
+export function totalsOf(items: Pick<Item, "status" | "price" | "cost" | "deposit">[]): Totals {
+  let billed = 0;
+  let cost = 0;
+  let deposits = 0;
+
+  for (const it of items) {
+    // A deposit is money that actually changed hands, so it counts even
+    // when the item is later canceled — otherwise cancelling an item
+    // would silently erase a payment the client really made.
+    deposits += it.deposit ?? 0;
+
+    // Canceled items are never charged, and their cost never happened.
+    if (!isBillable(it.status)) continue;
+    billed += it.price ?? 0;
+    cost += it.cost ?? 0;
+  }
+
+  return {
+    billed,
+    cost,
+    profit: billed - cost,
+    deposits,
+    balance: billed - deposits,
+    count: items.length,
+  };
+}

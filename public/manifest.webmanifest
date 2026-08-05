@@ -1,0 +1,25 @@
+{
+  "name": "Atelier — Tracker",
+  "short_name": "Atelier",
+  "description": "Sourcing requests, status and invoices.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2e9da",
+  "theme_color": "#f2e9da",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
