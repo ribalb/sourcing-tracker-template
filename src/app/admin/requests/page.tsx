@@ -164,6 +164,35 @@ export default function RequestsPage() {
         </button>
       </div>
 
+      {/*
+        Sits above the list, not inside the request's card: approving removes
+        that card from the pending list, which would take the prompt with it.
+      */}
+      {notify && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3">
+          <span className="text-sm text-emerald-900">{t("req.approvedNotify")}</span>
+          <div className="flex items-center gap-2">
+            <a
+              href={notify.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+            >
+              <WhatsAppIcon />
+              {t("item.notify")}
+            </a>
+            <button
+              type="button"
+              onClick={() => setNotify(null)}
+              className="rounded-lg px-2 py-2 text-sm text-emerald-800/70 transition hover:text-emerald-900"
+              aria-label={t("common.cancel")}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <Empty>{showAll ? t("req.emptyAll") : t("req.empty")}</Empty>
       ) : (
@@ -256,23 +285,6 @@ export default function RequestsPage() {
                           {t("common.cancel")}
                         </Button>
                       </div>
-                    </div>
-                  )}
-
-                  {/* ------------------------------------ tell them it's on */}
-                  {notify?.id === req.id && (
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                      <span className="text-sm text-emerald-900">{t("req.approvedNotify")}</span>
-                      <a
-                        href={notify.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setNotify(null)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
-                      >
-                        <WhatsAppIcon />
-                        {t("item.notify")}
-                      </a>
                     </div>
                   )}
 

@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atelier — how it works</title>
+<style>
+  :root {
+    --cream-50:  #faf6ef;
+    --cream-100: #f2e9da;
+    --cream-200: #e6d9c2;
+    --cream-300: #d4c3a4;
+    --ink:       #14110d;
+    --muted:     #6b6157;
+    --serif: Didot, "Bodoni MT", "Playfair Display", "Times New Roman", Georgia, serif;
+    --sans: ui-sans-serif, system-ui, "Segoe UI", "Noto Sans Arabic", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #e9e4db;
+    line-height: 1.55;
+  }
+
+  /* Each .page is one sheet of A4 */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 8mm auto;
+    padding: 18mm 18mm 14mm;
+    background: #fff;
+    box-shadow: 0 2px 14px rgba(0,0,0,.12);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------------------------------------------------------- cover */
+  .cover {
+    background: var(--cream-100);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .wordmark { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+  .wordmark .top { font-family: var(--serif); font-size: 54px; letter-spacing: .03em; }
+  .wordmark .bottom { font-family: var(--serif); font-size: 14px; letter-spacing: .42em; text-indent: .42em; margin-top: 8px; }
+  .cover h1 { font-family: var(--serif); font-size: 40px; font-weight: 400; margin: 56px 0 0; }
+  .cover p { color: var(--muted); max-width: 380px; margin: 14px auto 0; }
+  .cover .foot { position: absolute; bottom: 18mm; left: 0; right: 0; font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+
+  /* --------------------------------------------------------- typography */
+  h2 {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 400;
+    margin: 0 0 4px;
+  }
+  .step {
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .lead { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  strong { font-weight: 650; }
+
+  ul { margin: 0 0 12px; padding-left: 18px; }
+  li { margin-bottom: 5px; }
+
+  hr { border: 0; border-top: 1px solid var(--cream-300); margin: 18px 0; }
+
+  .note {
+    border-left: 3px solid var(--cream-300);
+    padding: 8px 0 8px 14px;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 14px;
+  }
+
+  /* ------------------------------------------------------------ shots */
+  figure { margin: 0 0 10px; }
+
+  .shot {
+    border: 1px solid var(--cream-300);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--cream-50);
+    display: flex;
+    justify-content: center;
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  /* Phone screenshots are tall — keep them from eating the page */
+  .shot.phone { max-width: 62mm; margin: 0 auto; }
+
+  .shot.empty {
+    min-height: 46mm;
+    align-items: center;
+    border-style: dashed;
+    color: #a8998a;
+    font-size: 12px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .shot.empty::after { content: "missing — " attr(data-file); }
+
+  figcaption {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+
+  .fill { flex: 1; }
+
+  /* ------------------------------------------------------------ print */
+  @media print {
+    body { background: #fff; }
+    .page {
+      margin: 0;
+      box-shadow: none;
+      width: auto;
+      min-height: auto;
+      padding: 0;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+    .cover { background: var(--cream-100) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .shot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4; margin: 16mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ cover -->
+<section class="page cover">
+  <div class="wordmark">
+    <span class="top">ATELIER</span>
+    <span class="bottom">BEIRUT</span>
+  </div>
+
+  <h1>How it works</h1>
+  <p>
+    One order, followed from the moment a customer asks for it
+    to the moment they pay.
+  </p>
+
+  <div class="foot">Order tracker for sourcing businesses</div>
+</section>
+
+<!-- ========================================================== the problem -->
+<section class="page">
+  <div class="step">The problem</div>
+  <h2>Where is my order?</h2>
+
+  <p class="lead">
+    A sourcing business runs on messages. Customers ask for things in DMs,
+    sizes and budgets live in a chat history, and the same question arrives
+    every few days: <em>where is my order?</em>
+  </p>
+
+  <p>Which means four things go wrong, quietly and constantly:</p>
+
+  <ul>
+    <li><strong>You answer the same question all week.</strong> Every customer,
+      every few days, for every item.</li>
+    <li><strong>You retype everything.</strong> A request arrives as a photo and
+      a paragraph; you copy it somewhere by hand, or you don't and you forget it.</li>
+    <li><strong>You shop from memory.</strong> Standing in a shop abroad, trying
+      to remember who wanted size 38 and what they were willing to spend.</li>
+    <li><strong>You don't really know what you made.</strong> Cost here, price
+      there, a deposit taken in cash. The number at the end of a trip is a guess.</li>
+  </ul>
+
+  <hr>
+
+  <p class="lead">This is one app that removes all four.</p>
+  <p class="muted">
+    It has two doors: one for you, one for each customer. You get everything —
+    prices, costs, profit. They get their own order and nothing else. The pages
+    that follow walk through a single order from both sides.
+  </p>
+</section>
+
+<!-- =========================================================== step 1 -->
+<section class="page">
+  <div class="step">Step 1</div>
+  <h2>A customer asks for something</h2>
+  <p class="lead">
+    You put one link in your Instagram bio. Anyone can fill it in — name,
+    WhatsApp number, what they want, their size, their budget, and a photo.
+  </p>
+
+  <figure>
+    <div class="shot phone" data-file="01-request-form.png">
+      <img src="screenshots/01-request-form.png" alt="The public request form"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>The form anyone can reach from your bio</figcaption>
+  </figure>
+
+  <p class="note">
+    Nothing here becomes a customer or an order. It waits for you.
+  </p>
+
+  <p class="fill">
+    The photo matters more than it sounds. A written description of a bag is
+    never enough to find the right bag; the picture they already have on their
+    phone is.
+  </p>
+</section>
+
+<!-- =========================================================== step 2 -->
+<section class="page">
+  <div class="step">Step 2</div>
+  <h2>It arrives in your inbox</h2>
+  <p class="lead">
+    Requests collect in one place with a badge showing how many are waiting.
+    No scrolling back through DMs to find the one you meant to answer.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="02-requests-inbox.png">
+      <img src="screenshots/02-requests-inbox.png" alt="The requests inbox"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>Everything waiting for a decision, oldest first</figcaption>
+  </figure>
+
+  <p>
+    You either take it or you don't. Rejecting keeps the record without
+    creating anything.
+  </p>
+</section>
+
+<!-- =========================================================== step 3 -->
+<section class="page">
+  <div class="step">Step 3</div>
+  <h2>Approve, in one tap</h2>
+  <p class="lead">
+    Approving creates the customer, creates the order, and attaches their photo.
+    You never retype a word of it.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="03-approve-match.png">
+      <img src="screenshots/03-approve-match.png" alt="Duplicate customer check"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>It recognises a customer you already have, and asks first</figcaption>
+  </figure>
+
+  <p>
+    People write the same Lebanese number as <em>+961 71 …</em> and
+    <em>71 …</em>. The app spots that they match and offers to add the order to
+    the existing customer rather than making a second one — but it asks, because
+    two different people can share a first name.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="04-approved-notify.png">
+      <img src="screenshots/04-approved-notify.png" alt="Offer to message the customer"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>Then it offers to tell them, with the message already written</figcaption>
+  </figure>
+
+  <p class="note">
+    The app never messages a customer on its own. It opens WhatsApp with the
+    text ready — you read it, change it, send it or don't.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="14-clients-list.png">
+      <img src="screenshots/14-clients-list.png" alt="The client list"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>And they join your list, with what they owe already worked out</figcaption>
+  </figure>
+</section>
+
+<!-- =========================================================== step 4 -->
+<section class="page">
+  <div class="step">Step 4</div>
+  <h2>Everything you still have to find</h2>
+  <p class="lead">
+    One screen, every customer, oldest request first. Their photo, their size,
+    their budget. This is the screen you open walking into a shop.
+  </p>
+
+  <figure>
+    <div class="shot phone" data-file="05-to-source.png">
+      <img src="screenshots/05-to-source.png" alt="The sourcing list on a phone"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>Built for one hand, one thumb, while carrying bags</figcaption>
+  </figure>
+
+  <p>
+    <strong>Found</strong> and <strong>Bought</strong> are full-width buttons.
+    A tapped item doesn't vanish — it dims and offers <strong>Undo</strong>, so
+    a wrong tap while moving fast costs nothing.
+  </p>
+</section>
+
+<!-- =========================================================== step 5 -->
+<section class="page">
+  <div class="step">Step 5</div>
+  <h2>You find it, and you price it</h2>
+  <p class="lead">
+    Enter what you paid and what you're charging. Profit appears as you type,
+    before you commit to the number.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="06-item-form.png">
+      <img src="screenshots/06-item-form.png" alt="Item form with cost and profit"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>The amber block is yours alone — cost, profit, private notes</figcaption>
+  </figure>
+
+  <figure>
+    <div class="shot" data-file="07-item-card.png">
+      <img src="screenshots/07-item-card.png" alt="An item as you see it"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>The same order on your side, with both photos</figcaption>
+  </figure>
+</section>
+
+<!-- =========================================================== step 6 -->
+<section class="page">
+  <div class="step">Step 6</div>
+  <h2>Your customer can just look</h2>
+  <p class="lead">
+    Every customer gets a private link. No account, no password, no app to
+    install. They open it whenever they wonder, instead of messaging you.
+  </p>
+
+  <div class="two">
+    <figure>
+      <div class="shot phone" data-file="08-client-page.png">
+        <img src="screenshots/08-client-page.png" alt="The customer's page"
+             onerror="this.parentElement.classList.add('empty'); this.remove();">
+      </div>
+      <figcaption>What they owe, and every item's status</figcaption>
+    </figure>
+
+    <figure>
+      <div class="shot phone" data-file="13-arabic.png">
+        <img src="screenshots/13-arabic.png" alt="The same page in Arabic"
+             onerror="this.parentElement.classList.add('empty'); this.remove();">
+      </div>
+      <figcaption>The same page in Arabic, right to left</figcaption>
+    </figure>
+  </div>
+
+  <p>
+    They see the photo of what you actually found — so "is this the right one?"
+    is answered before it's asked.
+  </p>
+</section>
+
+<!-- =========================================================== step 7 -->
+<section class="page">
+  <div class="step">Step 7</div>
+  <h2>They pay</h2>
+  <p class="lead">
+    Your account number and the exact amount, each copied with one tap. Nobody
+    retypes a number out of a paragraph and gets it wrong.
+  </p>
+
+  <figure>
+    <div class="shot phone" data-file="09-how-to-pay.png">
+      <img src="screenshots/09-how-to-pay.png" alt="How to pay"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>Whish, OMT, bank — whatever you use, in your own words</figcaption>
+  </figure>
+
+  <p>
+    The amount shown is what's actually left after any deposit. When it reaches
+    zero the whole section disappears, because there's nothing left to do.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="15-settings.png">
+      <img src="screenshots/15-settings.png" alt="Payment settings"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>You write this once, in your own words. Change the number any time.</figcaption>
+  </figure>
+</section>
+
+<!-- =========================================================== step 8 -->
+<section class="page">
+  <div class="step">Step 8</div>
+  <h2>What your customer never sees</h2>
+
+  <p class="lead">
+    This is the part that matters most, and it is worth being precise about.
+  </p>
+
+  <p>
+    Your cost and your profit are not hidden by the screen. They are never sent
+    to the customer's phone at all.
+  </p>
+
+  <p>
+    The customer's page cannot read the database. It can call exactly one
+    function, which returns a fixed list of things: description, size, status,
+    price, deposit, photo. Cost is not on that list, so there is nothing to
+    find — not in the page, not in the network traffic, not by anyone technical
+    who goes looking.
+  </p>
+
+  <hr>
+
+  <p class="muted">
+    Practically: you can hand a customer their link without a second thought,
+    and you can send it in a group chat without checking what's on it.
+  </p>
+</section>
+
+<!-- =========================================================== step 9 -->
+<section class="page">
+  <div class="step">Step 9</div>
+  <h2>You know exactly what you made</h2>
+  <p class="lead">
+    Billed, cost, profit, deposits collected, balance still outstanding — over
+    any dates you choose, filtered by any status.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="10-dashboard.png">
+      <img src="screenshots/10-dashboard.png" alt="The dashboard"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>A trip's profit is a date range, not an evening with a calculator</figcaption>
+  </figure>
+
+  <figure>
+    <div class="shot" data-file="11-report-pdf.png">
+      <img src="screenshots/11-report-pdf.png" alt="A printed report"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>The same figures as Excel or PDF, in two clicks</figcaption>
+  </figure>
+</section>
+
+<!-- ========================================================== step 10 -->
+<section class="page">
+  <div class="step">Step 10</div>
+  <h2>Finished orders get out of the way</h2>
+  <p class="lead">
+    When an order is delivered and paid, you close it. It disappears from the
+    customer's link, so a returning customer opens it and sees only what they
+    have on order now.
+  </p>
+
+  <figure>
+    <div class="shot" data-file="12-history.png">
+      <img src="screenshots/12-history.png" alt="History section"
+           onerror="this.parentElement.classList.add('empty'); this.remove();">
+    </div>
+    <figcaption>On your side it folds into History — still counted, out of the way</figcaption>
+  </figure>
+
+  <p>
+    Closed orders stay in your dashboard, your profit and your exports. They
+    were real sales. They just stop cluttering the screen.
+  </p>
+</section>
+
+<!-- ============================================================ close -->
+<section class="page">
+  <div class="step">In short</div>
+  <h2>What you get</h2>
+
+  <ul>
+    <li><strong>Your own app</strong>, in your name and your colours, at your
+      own address.</li>
+    <li><strong>Your own database.</strong> Nothing shared with any other
+      business.</li>
+    <li><strong>A private link for every customer</strong> — no accounts, no
+      passwords, nothing to install.</li>
+    <li><strong>A request link</strong> for your Instagram bio.</li>
+    <li><strong>Cost and profit protected</strong> at the database, not by the
+      screen.</li>
+    <li><strong>Arabic and English</strong>, switchable on every page.</li>
+    <li><strong>Installs on your phone</strong> like a normal app.</li>
+    <li><strong>Excel and PDF reports</strong> whenever your accountant asks.</li>
+  </ul>
+
+  <hr>
+
+  <div class="fill"></div>
+
+  <div class="wordmark" style="align-self:center">
+    <span class="top" style="font-size:34px">ATELIER</span>
+    <span class="bottom" style="font-size:10px">BEIRUT</span>
+  </div>
+</section>
+
+</body>
+</html>
