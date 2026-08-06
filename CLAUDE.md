@@ -101,6 +101,14 @@ for the sales demo only. Never run it on a client's project.
   are wide — fields need `min-w-0` or they break out of their card.
 - The owner's payment message supports `**bold**` via a small parser in
   `pay-section.tsx`. It is not full markdown.
+- **PostgREST matches an RPC by the exact set of argument names it is sent.** A
+  new parameter with a `default` does *not* let an older caller through: the
+  four-argument call the deployed form was making died with `PGRST202` the
+  moment `011` replaced `submit_request` with a five-argument version. So
+  adding an argument to a function the browser calls breaks the live form
+  between running the SQL and finishing the deploy, whichever order you pick.
+  When that window matters, leave a wrapper with the old signature delegating
+  to the new one, and drop it after the deploy.
 
 ## Deliberately not built
 

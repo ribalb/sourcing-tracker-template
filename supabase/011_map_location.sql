@@ -52,11 +52,17 @@ $$;
 -- one: two signatures differing by one argument make the call ambiguous,
 -- and the error PostgREST returns for that says nothing useful.
 --
--- Which is why p_map_url comes last and defaults to null. Run this file
--- and the live form still works untouched — it sends four arguments by
--- name, and PostgREST matches them to a function whose fifth has a
--- default. Without that, dropping the old signature would break the form
--- for everyone until the new code finished deploying.
+-- p_map_url comes last and defaults to null so that psql callers and any
+-- future SQL need not pass it.
+--
+-- It does NOT keep the previous release's form alive. PostgREST matches an
+-- RPC by the exact set of argument names it is sent, and a defaulted
+-- parameter does not make a smaller call match: once this file has run, a
+-- four-argument call fails with PGRST202 until the new code is deployed.
+-- An earlier version of this comment claimed otherwise and was wrong — the
+-- demo's request form went down for exactly that reason. Run this file and
+-- deploy together, or paste a four-argument wrapper delegating to this one
+-- and drop it afterwards.
 -- ------------------------------------------------------------
 drop function if exists public.submit_request(text, text, text, jsonb);
 
