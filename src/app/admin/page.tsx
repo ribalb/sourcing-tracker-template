@@ -319,11 +319,25 @@ function PrintableReport({
         </p>
       </header>
 
-      <table className="w-full border-collapse text-[11px]">
+      {/* Fixed layout with declared widths: nine columns left to size themselves
+          let the address and the description fight, and the money columns lose. */}
+      <table className="w-full table-fixed border-collapse text-[11px]">
+        <colgroup>
+          <col className="w-[11%]" /> {/* date — enough for "30 Sep 2026" unbroken */}
+          <col className="w-[12%]" />
+          <col className="w-[18%]" /> {/* address */}
+          <col className="w-[17%]" />
+          <col className="w-[8%]" />
+          <col className="w-[8.5%]" /> {/* money — fits "$1,240.98" on one line */}
+          <col className="w-[8.5%]" />
+          <col className="w-[8.5%]" />
+          <col className="w-[8.5%]" />
+        </colgroup>
         <thead>
           <tr className="border-b border-stone-400 text-start">
             <Th>{t("report.date")}</Th>
             <Th>{t("clients.name")}</Th>
+            <Th>{t("req.reqAddress")}</Th>
             <Th>{t("item.description")}</Th>
             <Th>{t("item.status")}</Th>
             <Th right>{t("item.price")}</Th>
@@ -336,16 +350,8 @@ function PrintableReport({
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-stone-200">
               <Td>{formatDate(r.created_at, lang)}</Td>
-              <Td>
-                {r.client}
-                {/* Under the name rather than in its own column: an address is
-                    long, and nine columns at this size stop being readable. */}
-                {r.address && (
-                  <span className="block text-[10px] leading-tight text-stone-500">
-                    {oneLine(r.address)}
-                  </span>
-                )}
-              </Td>
+              <Td>{r.client}</Td>
+              <Td>{r.address ? oneLine(r.address) : "—"}</Td>
               <Td>
                 {r.description}
                 {r.specs && <span className="text-stone-500"> · {r.specs}</span>}
@@ -375,15 +381,24 @@ function PrintableReport({
   );
 }
 
+/* The gutter is padding rather than spacing between columns: with a fixed
+   layout the cells sit flush against each other and the text would touch.
+   The last one keeps its edge so the totals below line up with it. */
 function Th({ children, right = false }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <th className={`py-1.5 font-semibold ${right ? "text-end" : "text-start"}`}>{children}</th>
+    <th className={`py-1.5 pe-2 font-semibold last:pe-0 ${right ? "text-end" : "text-start"}`}>
+      {children}
+    </th>
   );
 }
 
 function Td({ children, right = false }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <td className={`py-1.5 align-top ${right ? "text-end tabular-nums" : "text-start"}`}>
+    <td
+      className={`py-1.5 pe-2 align-top break-words last:pe-0 ${
+        right ? "text-end tabular-nums" : "text-start"
+      }`}
+    >
       {children}
     </td>
   );
