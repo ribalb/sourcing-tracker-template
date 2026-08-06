@@ -51,6 +51,11 @@ sign-up step means they message the owner instead of self-serving.
   it would erase a real payment. If that leaves a credit, the page says so.
 - **The app never sends a message by itself.** Status changes open WhatsApp with
   the text ready, to be edited or abandoned.
+- **The public form writes through `submit_request()`, not through the table.**
+  It is `security definer`, so `requests` has no anon insert policy any more.
+  One call writes the request and all its items together, rejects photo paths
+  outside `requests/`, and caps the list at ten. Inserting from the browser
+  again would walk past every one of those.
 - **Duplicate clients are suggested, never merged automatically.** Matching is
   on name or the last 7 digits of the phone (`phoneKey`), because the same
   Lebanese number gets written `+961 71 …` and `71 …`. Two different women with
@@ -63,7 +68,7 @@ sign-up step means they message the owner instead of self-serving.
 
 ## Database
 
-Run `schema.sql` then `002`–`008` in order; all are idempotent. There is no
+Run `schema.sql` then `002`–`009` in order; all are idempotent. There is no
 migration runner — they are pasted into the Supabase SQL editor by hand.
 
 `900_demo_seed.sql` **deletes every row** and inserts invented data. It exists

@@ -73,6 +73,7 @@ schema.sql
 006_item_photos.sql
 007_closed_status.sql
 008_requests.sql
+009_request_address_and_items.sql
 ```
 
 All are safe to run twice.

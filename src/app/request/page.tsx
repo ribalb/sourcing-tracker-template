@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { LangSwitch, useI18n } from "@/lib/i18n";
-import { toNumber } from "@/lib/format";
+import { fill } from "@/lib/format";
 import { photoUrl, uploadPhoto } from "@/lib/photos";
 import { Logo } from "@/components/logo";
+import type { DraftItem } from "@/lib/types";
 import { Button, Card, ErrorNote, Field, Input, Money, Textarea } from "@/components/ui";
+
+/** One request may carry ten items; submit_request() enforces the same number. */
+const MAX_ITEMS = 10;
+
+/**
+ * React keys for rows that do not exist in any database yet.
+ * A counter, not crypto.randomUUID(), which is missing on plain http.
+ */
+let nextKey = 0;
+function blankItem(): DraftItem {
+  nextKey += 1;
+  return { key: `item-${nextKey}`, description: "", specs: "", budget: "", photo: null };
+}
 
 /**
  * The link for the Instagram bio. Anyone can submit; nothing here creates a
@@ -17,36 +31,32 @@ export default function RequestPage() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [description, setDescription] = useState("");
-  const [specs, setSpecs] = useState("");
-  const [budget, setBudget] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [address, setAddress] = useState("");
+  const [items, setItems] = useState<DraftItem[]>([blankItem()]);
   const [trap, setTrap] = useState(""); // honeypot, see below
 
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const patchItem = useCallback((key: string, patch: Partial<DraftItem>) => {
+    setItems((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)));
+  }, []);
 
-    setUploading(true);
-    setError(null);
-    try {
-      setPhoto(await uploadPhoto(file, "requests"));
-    } catch {
-      setError(t("req.photoError"));
-    } finally {
-      setUploading(false);
-    }
+  function addItem() {
+    setItems((prev) => (prev.length >= MAX_ITEMS ? prev : [...prev, blankItem()]));
+  }
+
+  function removeItem(key: string) {
+    setItems((prev) => (prev.length === 1 ? prev : prev.filter((it) => it.key !== key)));
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !description.trim()) return;
+
+    const filled = items.filter((it) => it.description.trim() !== "");
+    if (!name.trim() || filled.length === 0) return;
 
     // A bot fills every field it finds; a person never sees this one.
     if (trap) {
@@ -57,20 +67,31 @@ export default function RequestPage() {
     setBusy(true);
     setError(null);
 
-    const { error } = await supabaseBrowser().from("requests").insert({
-      name: name.trim(),
-      phone: phone.trim() || null,
-      description: description.trim(),
-      specs: specs.trim() || null,
-      budget: toNumber(budget),
-      photo,
+    const { data, error } = await supabaseBrowser().rpc("submit_request", {
+      p_name: name.trim(),
+      p_phone: phone.trim() || null,
+      p_address: address.trim() || null,
+      p_items: filled.map((it) => ({
+        description: it.description.trim(),
+        specs: it.specs.trim() || null,
+        budget: it.budget.trim() || null,
+        photo: it.photo,
+      })),
     });
 
     setBusy(false);
+
     if (error) {
       setError(t("req.failed"));
       return;
     }
+
+    const result = data as { ok: boolean; reason?: string } | null;
+    if (!result?.ok) {
+      setError(result?.reason === "too_many" ? t("req.errFlood") : t("req.failed"));
+      return;
+    }
+
     setSent(true);
   }
 
@@ -110,54 +131,40 @@ export default function RequestPage() {
             />
           </Field>
 
-          <Field label={t("req.what")} hint={t("req.whatHint")}>
-            <Textarea
-              required
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+          <Field label={t("req.address")} hint={t("req.addressHint")}>
+            <Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
           </Field>
 
-          <Field label={t("req.specs")} optional>
-            <Input value={specs} onChange={(e) => setSpecs(e.target.value)} />
-          </Field>
+          <hr className="border-cream-200" />
 
-          <Field label={t("req.budget")} optional>
-            <Money value={budget} onChange={(e) => setBudget(e.target.value)} />
-          </Field>
+          {/* ------------------------------------------------------- the items */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-stone-700">{t("req.itemsTitle")}</p>
 
-          <div>
-            <p className="mb-1.5 text-sm font-medium text-stone-700">{t("req.photo")}</p>
+            {items.map((item, index) => (
+              <ItemFields
+                key={item.key}
+                item={item}
+                index={index}
+                showRemove={items.length > 1}
+                onChange={patchItem}
+                onRemove={removeItem}
+                onError={setError}
+                onUploading={setUploading}
+              />
+            ))}
 
-            {photo ? (
-              <div className="overflow-hidden rounded-xl border border-cream-300 bg-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl(photo)!}
-                  alt={t("req.photo")}
-                  className="h-40 w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setPhoto(null)}
-                  className="w-full border-t border-cream-200 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50"
-                >
-                  {t("item.photoRemove")}
-                </button>
-              </div>
+            {items.length < MAX_ITEMS ? (
+              <button
+                type="button"
+                onClick={addItem}
+                className="w-full rounded-xl border border-dashed border-cream-300 py-2.5 text-sm font-medium text-stone-600 transition hover:border-stone-400 hover:text-ink"
+              >
+                {t("req.addItem")}
+              </button>
             ) : (
-              <label className="flex h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed border-cream-300 bg-white text-sm text-stone-500 transition hover:border-stone-400 hover:text-stone-700">
-                {uploading ? t("item.photoUploading") : t("req.photoAdd")}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhoto}
-                />
-              </label>
+              <p className="text-xs text-stone-400">{t("req.maxItems")}</p>
             )}
-            <p className="mt-1 text-xs text-stone-400">{t("req.photoHint")}</p>
           </div>
 
           {/* Honeypot: hidden from people, irresistible to bots. */}
@@ -174,11 +181,133 @@ export default function RequestPage() {
 
           {error && <ErrorNote message={error} />}
 
-          <Button type="submit" disabled={busy || uploading} className="w-full">
+          <Button type="submit" disabled={busy || uploading > 0} className="w-full">
             {busy ? t("req.sending") : t("req.send")}
           </Button>
         </form>
       </Card>
     </main>
+  );
+}
+
+/* ------------------------------------------------------------------ item */
+
+function ItemFields({
+  item,
+  index,
+  showRemove,
+  onChange,
+  onRemove,
+  onError,
+  onUploading,
+}: {
+  item: DraftItem;
+  index: number;
+  showRemove: boolean;
+  onChange: (key: string, patch: Partial<DraftItem>) => void;
+  onRemove: (key: string) => void;
+  onError: (message: string | null) => void;
+  /** Counts uploads in flight across every item, so submit waits for all of them. */
+  onUploading: (update: (n: number) => number) => void;
+}) {
+  const { t } = useI18n();
+  const [uploading, setUploading] = useState(false);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    onUploading((n) => n + 1);
+    onError(null);
+
+    try {
+      const path = await uploadPhoto(file, "requests");
+      onChange(item.key, { photo: path });
+    } catch {
+      onError(t("req.photoError"));
+    } finally {
+      if (mounted.current) setUploading(false);
+      onUploading((n) => Math.max(0, n - 1));
+    }
+  }
+
+  const url = photoUrl(item.photo);
+
+  return (
+    <div className="rounded-xl border border-cream-200 bg-cream-50/60 p-3.5">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+          {fill(t("req.itemN"), { n: String(index + 1) })}
+        </span>
+        {showRemove && (
+          <button
+            type="button"
+            onClick={() => onRemove(item.key)}
+            className="text-xs font-medium text-red-700 transition hover:underline"
+          >
+            {t("req.removeItem")}
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <Field label={t("req.what")} hint={index === 0 ? t("req.whatHint") : undefined}>
+          <Textarea
+            required
+            rows={2}
+            value={item.description}
+            onChange={(e) => onChange(item.key, { description: e.target.value })}
+          />
+        </Field>
+
+        <Field label={t("req.specs")} optional>
+          <Input
+            value={item.specs}
+            onChange={(e) => onChange(item.key, { specs: e.target.value })}
+          />
+        </Field>
+
+        <Field label={t("req.budget")} optional>
+          <Money
+            value={item.budget}
+            onChange={(e) => onChange(item.key, { budget: e.target.value })}
+          />
+        </Field>
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-stone-700">{t("req.photo")}</p>
+
+          {url ? (
+            <div className="overflow-hidden rounded-xl border border-cream-300 bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt={t("req.photo")} className="h-40 w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange(item.key, { photo: null })}
+                className="w-full border-t border-cream-200 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50"
+              >
+                {t("item.photoRemove")}
+              </button>
+            </div>
+          ) : (
+            <label className="flex h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed border-cream-300 bg-white text-sm text-stone-500 transition hover:border-stone-400 hover:text-stone-700">
+              {uploading ? t("item.photoUploading") : t("req.photoAdd")}
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+            </label>
+          )}
+          {index === 0 && <p className="mt-1 text-xs text-stone-400">{t("req.photoHint")}</p>}
+        </div>
+      </div>
+    </div>
   );
 }

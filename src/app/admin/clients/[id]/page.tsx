@@ -23,6 +23,7 @@ import {
   Stat,
   StatusBadge,
   StatusSelect,
+  Textarea,
   WhatsAppIcon,
 } from "@/components/ui";
 
@@ -42,6 +43,10 @@ export default function ClientPage() {
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [justChanged, setJustChanged] = useState<string | null>(null);
+
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressDraft, setAddressDraft] = useState("");
+  const [busyAddress, setBusyAddress] = useState(false);
 
   const [others, setOthers] = useState<Client[]>([]);
   const [merging, setMerging] = useState(false);
@@ -121,6 +126,27 @@ export default function ClientPage() {
         : `Hello ${client.name} 👋 you can follow your order here: ${shareUrl}`;
 
     return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+  }
+
+  async function saveAddress() {
+    if (!client) return;
+
+    setBusyAddress(true);
+    const value = addressDraft.trim() || null;
+
+    const { error } = await supabaseBrowser()
+      .from("clients")
+      .update({ address: value })
+      .eq("id", client.id);
+
+    setBusyAddress(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setClient({ ...client, address: value });
+    setEditingAddress(false);
   }
 
   async function resetToken() {
@@ -295,6 +321,51 @@ export default function ClientPage() {
             {t("client.reset")}
           </Button>
         </div>
+      </Card>
+
+      {/* --------------------------------------------------- delivery address */}
+      <Card>
+        <h2 className="text-sm font-semibold text-stone-700">{t("client.address")}</h2>
+        <p className="mt-1 text-xs text-stone-500">{t("client.addressHint")}</p>
+
+        {editingAddress ? (
+          <div className="mt-3 space-y-2.5">
+            <Textarea
+              autoFocus
+              rows={3}
+              value={addressDraft}
+              onChange={(e) => setAddressDraft(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button disabled={busyAddress} onClick={saveAddress}>
+                {busyAddress ? t("common.saving") : t("common.save")}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingAddress(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2.5 flex items-start justify-between gap-3">
+            <p
+              className={`min-w-0 whitespace-pre-line text-sm ${
+                client.address ? "text-ink" : "text-stone-400"
+              }`}
+            >
+              {client.address || t("client.addressEmpty")}
+            </p>
+            <Button
+              variant="ghost"
+              className="shrink-0"
+              onClick={() => {
+                setAddressDraft(client.address ?? "");
+                setEditingAddress(true);
+              }}
+            >
+              {t("common.edit")}
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* ----------------------------------------------------------- items */}

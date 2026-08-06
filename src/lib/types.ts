@@ -29,6 +29,8 @@ export type Client = {
   id: string;
   name: string;
   phone: string | null;
+  /** Where their orders are delivered. Asked once on the request form. */
+  address: string | null;
   note: string | null;
   token: string;
   created_at: string;
@@ -85,18 +87,46 @@ export type PublicView = {
 
 export type RequestStatus = "pending" | "approved" | "rejected";
 
+/** One line of a submission. A request may hold up to ten. */
+export type RequestItem = {
+  id: string;
+  request_id: string;
+  position: number;
+  description: string;
+  specs: string | null;
+  budget: number | null;
+  photo: string | null;
+  created_at: string;
+};
+
+/** What the form sends before anything exists in the database. */
+export type DraftItem = {
+  /** Local only, so React can key the rows while they are being typed. */
+  key: string;
+  description: string;
+  specs: string;
+  budget: string;
+  photo: string | null;
+};
+
 /** A submission from the public form. Not a client and not an order yet. */
 export type ClientRequest = {
   id: string;
   name: string;
   phone: string | null;
-  description: string;
-  specs: string | null;
-  budget: number | null;
-  photo: string | null;
+  address: string | null;
   status: RequestStatus;
   client_id: string | null;
   created_at: string;
+  /**
+   * Submissions from before multiple items existed kept their one item in
+   * these columns. 009 copied them into request_items; nothing writes them
+   * now. See supabase/009_request_address_and_items.sql.
+   */
+  description: string | null;
+  specs: string | null;
+  budget: number | null;
+  photo: string | null;
 };
 
 export type Settings = {

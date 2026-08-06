@@ -46,6 +46,17 @@ const DICT = {
     "req.thanksBody":
       "We've received your request. We'll message you on WhatsApp once we've had a look.",
 
+    "req.address": "Delivery address",
+    "req.addressHint": "Where we should bring the order. Area, street, building, floor.",
+
+    "req.itemsTitle": "What you're looking for",
+    "req.itemN": "Item {n}",
+    "req.addItem": "+ Add another item",
+    "req.removeItem": "Remove",
+    "req.maxItems": "That's ten items — send this one and start another if you need more.",
+
+    "req.errFlood": "That's a lot of requests from this number. Message us on Instagram instead.",
+
     "req.inbox": "Requests",
     "req.empty": "No new requests.",
     "req.emptyAll": "No requests yet. Share your link to start receiving them.",
@@ -62,6 +73,9 @@ const DICT = {
     "req.attach": "Add to",
     "req.createNew": "Create a new client",
     "req.approvedNotify": "Approved. Let them know?",
+    "req.reqAddress": "Address",
+    "req.noAddress": "No address given",
+    "req.itemCount": "{n} items",
     "req.link": "Your request link",
     "req.linkHint":
       "Put this in your Instagram bio. Anyone can send a request; nothing is created until you approve it.",
@@ -169,6 +183,9 @@ const DICT = {
       "Delete this client and all their items? This cannot be undone.",
     "client.back": "Back to clients",
     "client.notFound": "Client not found.",
+    "client.address": "Delivery address",
+    "client.addressHint": "Comes from their request. Edit it here when they move.",
+    "client.addressEmpty": "No address yet.",
 
     "item.add": "Add item",
     "item.new": "New item",
@@ -296,6 +313,17 @@ const DICT = {
     "req.thanks": "شكراً لك 🤍",
     "req.thanksBody": "وصلنا طلبك. سنتواصل معك عبر واتساب بعد الاطلاع عليه.",
 
+    "req.address": "عنوان التسليم",
+    "req.addressHint": "المكان الذي يُسلَّم إليه الطلب: المنطقة، الشارع، المبنى، الطابق.",
+
+    "req.itemsTitle": "ما الذي تبحث عنه",
+    "req.itemN": "القطعة {n}",
+    "req.addItem": "+ إضافة قطعة أخرى",
+    "req.removeItem": "حذف",
+    "req.maxItems": "بلغت عشر قطع، وهو الحد الأقصى للطلب الواحد.",
+
+    "req.errFlood": "عدد الطلبات من هذا الرقم كبير. يرجى التواصل عبر إنستغرام.",
+
     "req.inbox": "الطلبات",
     "req.empty": "لا توجد طلبات جديدة.",
     "req.emptyAll": "لا توجد طلبات بعد. شاركي رابطك لتبدأ بالوصول.",
@@ -312,6 +340,9 @@ const DICT = {
     "req.attach": "أضيفي إلى",
     "req.createNew": "إنشاء زبون جديد",
     "req.approvedNotify": "تمت الموافقة. هل تريدين إبلاغه؟",
+    "req.reqAddress": "العنوان",
+    "req.noAddress": "لم يُذكر عنوان",
+    "req.itemCount": "{n} قطع",
     "req.link": "رابط الطلبات",
     "req.linkHint":
       "ضعيه في وصف حسابك على إنستغرام. يمكن لأي شخص إرسال طلب، ولا يُنشأ شيء قبل موافقتك.",
@@ -344,6 +375,7 @@ const DICT = {
     "settings.saved": "تم الحفظ",
     "settings.preview": "هذا ما يراه الزبون:",
     "settings.preview2": "معاينة النموذج",
+
 
     "login.title": "تسجيل الدخول",
     "login.subtitle": "للمالكة فقط",
@@ -415,6 +447,9 @@ const DICT = {
     "client.deleteConfirm": "حذف هذا الزبون وكل قطعه؟ لا يمكن التراجع.",
     "client.back": "العودة إلى الزبائن",
     "client.notFound": "الزبون غير موجود.",
+    "client.address": "عنوان التسليم",
+    "client.addressHint": "يأتي من طلبه. يمكنك تعديله هنا عند تغيّر العنوان.",
+    "client.addressEmpty": "لا يوجد عنوان بعد.",
 
     "item.add": "إضافة قطعة",
     "item.new": "قطعة جديدة",

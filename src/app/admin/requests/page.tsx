@@ -1,18 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { fill, formatDate, moneyOrDash, phoneKey, waNumber } from "@/lib/format";
 import { photoUrl } from "@/lib/photos";
-import type { Client, ClientRequest } from "@/lib/types";
+import type { Client, ClientRequest, RequestItem } from "@/lib/types";
 import { Button, Card, Empty, ErrorNote, Loading, WhatsAppIcon } from "@/components/ui";
 
 export default function RequestsPage() {
   const { t, lang } = useI18n();
 
   const [rows, setRows] = useState<ClientRequest[] | null>(null);
+  const [lines, setLines] = useState<RequestItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +29,35 @@ export default function RequestsPage() {
     const sb = supabaseBrowser();
 
     const base = sb.from("requests").select("*").order("created_at", { ascending: false });
-    const [reqs, cls] = await Promise.all([
+    const [reqs, its, cls] = await Promise.all([
       showAll ? base : base.eq("status", "pending"),
+      sb.from("request_items").select("*").order("position"),
       sb.from("clients").select("*"),
     ]);
 
-    if (reqs.error || cls.error) {
-      setError(reqs.error?.message ?? cls.error!.message);
+    if (reqs.error || its.error || cls.error) {
+      setError(reqs.error?.message ?? its.error?.message ?? cls.error!.message);
       return;
     }
     setRows((reqs.data ?? []) as ClientRequest[]);
+    setLines((its.data ?? []) as RequestItem[]);
     setClients((cls.data ?? []) as Client[]);
   }, [showAll]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  /** The lines of each request, in the order they were typed. */
+  const itemsOf = useMemo(() => {
+    const map = new Map<string, RequestItem[]>();
+    for (const line of lines) {
+      const list = map.get(line.request_id);
+      if (list) list.push(line);
+      else map.set(line.request_id, [line]);
+    }
+    return map;
+  }, [lines]);
 
   /** Existing clients that look like the same person. Suggestion only. */
   function candidatesFor(req: ClientRequest): Client[] {
@@ -71,27 +85,39 @@ export default function RequestsPage() {
     setError(null);
 
     const sb = supabaseBrowser();
+    const requested = itemsOf.get(req.id) ?? [];
+
     try {
       let id = clientId;
 
       if (!id) {
         const { data, error } = await sb
           .from("clients")
-          .insert({ name: req.name, phone: req.phone })
+          .insert({ name: req.name, phone: req.phone, address: req.address })
           .select("id")
           .single();
         if (error) throw error;
         id = (data as { id: string }).id;
+      } else if (req.address) {
+        // Fill a blank address, never overwrite one you have already corrected.
+        const existing = clients.find((c) => c.id === id);
+        if (existing && !existing.address) {
+          await sb.from("clients").update({ address: req.address }).eq("id", id);
+        }
       }
 
-      const { error: iErr } = await sb.from("items").insert({
-        client_id: id,
-        description: req.description,
-        specs: req.specs,
-        budget: req.budget,
-        status: "requested",
-        request_photo: req.photo,
-      });
+      // Every line becomes its own order, so each can be priced and
+      // shipped on its own timeline.
+      const { error: iErr } = await sb.from("items").insert(
+        requested.map((line) => ({
+          client_id: id,
+          description: line.description,
+          specs: line.specs,
+          budget: line.budget,
+          status: "requested",
+          request_photo: line.photo,
+        })),
+      );
       if (iErr) throw iErr;
 
       const { error: rErr } = await sb
@@ -100,7 +126,7 @@ export default function RequestsPage() {
         .eq("id", req.id);
       if (rErr) throw rErr;
 
-      await buildNotify(req, id);
+      await buildNotify(req, id, requested);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.error"));
@@ -110,7 +136,7 @@ export default function RequestsPage() {
   }
 
   /** Compose the "approved and being processed" WhatsApp message. */
-  async function buildNotify(req: ClientRequest, clientId: string) {
+  async function buildNotify(req: ClientRequest, clientId: string, requested: RequestItem[]) {
     const { data } = await supabaseBrowser()
       .from("clients")
       .select("name,phone,token")
@@ -125,9 +151,16 @@ export default function RequestsPage() {
       process.env.NEXT_PUBLIC_SITE_URL ||
       (typeof window !== "undefined" ? window.location.origin : "");
 
+    // The message names one thing; with several, it counts them instead of
+    // listing a paragraph into a WhatsApp bubble.
+    const what =
+      requested.length === 1
+        ? requested[0].description
+        : fill(t("req.itemCount"), { n: String(requested.length) });
+
     const text = fill(t("msg.approved"), {
       name: client.name,
-      item: req.description,
+      item: what,
       link: `${base}/c/${client.token}`,
     });
 
@@ -198,9 +231,9 @@ export default function RequestsPage() {
       ) : (
         <ul className="space-y-2.5">
           {rows.map((req) => {
-            const url = photoUrl(req.photo);
             const pending = req.status === "pending";
             const asking = matching?.id === req.id;
+            const requested = itemsOf.get(req.id) ?? [];
 
             return (
               <li key={req.id}>
@@ -224,25 +257,52 @@ export default function RequestsPage() {
                     )}
                   </div>
 
-                  {url && (
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={url}
-                        alt={req.description}
-                        className="mt-3 h-44 w-full rounded-xl border border-cream-200 object-cover"
-                      />
-                    </a>
-                  )}
+                  {/* ---------------------------------------------- address */}
+                  <div className="mt-3 rounded-xl bg-cream-50 px-3 py-2.5">
+                    <p className="text-xs font-medium text-stone-500">{t("req.reqAddress")}</p>
+                    {req.address ? (
+                      <p className="mt-0.5 whitespace-pre-line text-sm text-ink">{req.address}</p>
+                    ) : (
+                      <p className="mt-0.5 text-sm text-stone-400">{t("req.noAddress")}</p>
+                    )}
+                  </div>
 
-                  <p className="mt-3 whitespace-pre-line text-sm text-ink">{req.description}</p>
-                  {req.specs && <p className="mt-1 text-sm text-stone-600">{req.specs}</p>}
-                  <p className="mt-1.5 text-sm">
-                    <span className="text-stone-400">{t("item.budget")} </span>
-                    <span className="font-semibold tabular-nums text-ink">
-                      {moneyOrDash(req.budget)}
-                    </span>
-                  </p>
+                  {/* ------------------------------------------------ items */}
+                  <ul className="mt-3 space-y-2.5">
+                    {requested.map((line) => {
+                      const url = photoUrl(line.photo);
+                      return (
+                        <li
+                          key={line.id}
+                          className="rounded-xl border border-cream-200 p-3"
+                        >
+                          {url && (
+                            <a href={url} target="_blank" rel="noopener noreferrer">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={line.description}
+                                className="mb-2.5 h-44 w-full rounded-lg border border-cream-200 object-cover"
+                              />
+                            </a>
+                          )}
+
+                          <p className="whitespace-pre-line text-sm text-ink">
+                            {line.description}
+                          </p>
+                          {line.specs && (
+                            <p className="mt-1 text-sm text-stone-600">{line.specs}</p>
+                          )}
+                          <p className="mt-1.5 text-sm">
+                            <span className="text-stone-400">{t("item.budget")} </span>
+                            <span className="font-semibold tabular-nums text-ink">
+                              {moneyOrDash(line.budget)}
+                            </span>
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
 
                   {/* ------------------------------- possible duplicate ask */}
                   {asking && (
@@ -292,7 +352,7 @@ export default function RequestsPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         className="flex-1"
-                        disabled={busyId === req.id}
+                        disabled={busyId === req.id || requested.length === 0}
                         onClick={() => startApprove(req)}
                       >
                         {busyId === req.id ? t("common.saving") : t("req.approve")}
