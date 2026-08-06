@@ -22,13 +22,20 @@ import {
 type Row = Pick<
   Item,
   "id" | "description" | "specs" | "budget" | "status" | "price" | "cost" | "deposit" | "created_at"
-> & { client: string };
+> & { client: string; address: string | null };
+
+type ClientRel = { name?: string; address?: string | null };
 
 /** Supabase returns a to-one relation as an object, but older versions used an array. */
-function clientNameOf(raw: unknown): string {
+function clientOf(raw: unknown): ClientRel {
   const rel = (raw as { clients?: unknown }).clients;
-  if (Array.isArray(rel)) return (rel[0] as { name?: string })?.name ?? "";
-  return (rel as { name?: string } | null)?.name ?? "";
+  if (Array.isArray(rel)) return (rel[0] as ClientRel) ?? {};
+  return (rel as ClientRel | null) ?? {};
+}
+
+/** Addresses are typed over several lines; a table cell wants one. */
+function oneLine(address: string | null | undefined): string {
+  return (address ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).join(", ");
 }
 
 export default function DashboardPage() {
@@ -46,7 +53,7 @@ export default function DashboardPage() {
     supabaseBrowser()
       .from("items")
       .select(
-        "id,description,specs,budget,status,price,cost,deposit,created_at,clients(name)",
+        "id,description,specs,budget,status,price,cost,deposit,created_at,clients(name,address)",
       )
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -56,7 +63,14 @@ export default function DashboardPage() {
           return;
         }
         setRows(
-          (data ?? []).map((r) => ({ ...(r as unknown as Row), client: clientNameOf(r) })),
+          (data ?? []).map((r) => {
+            const c = clientOf(r);
+            return {
+              ...(r as unknown as Row),
+              client: c.name ?? "",
+              address: c.address ?? null,
+            };
+          }),
         );
       });
 
@@ -105,6 +119,7 @@ export default function DashboardPage() {
     const header = [
       t("report.date"),
       t("clients.name"),
+      t("req.reqAddress"),
       t("item.description"),
       t("item.specs"),
       t("item.status"),
@@ -123,6 +138,7 @@ export default function DashboardPage() {
       return [
         isoDate(r.created_at),
         r.client,
+        oneLine(r.address),
         r.description,
         r.specs ?? "",
         t(`status.${r.status}` as TKey),
@@ -320,7 +336,16 @@ function PrintableReport({
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-stone-200">
               <Td>{formatDate(r.created_at, lang)}</Td>
-              <Td>{r.client}</Td>
+              <Td>
+                {r.client}
+                {/* Under the name rather than in its own column: an address is
+                    long, and nine columns at this size stop being readable. */}
+                {r.address && (
+                  <span className="block text-[10px] leading-tight text-stone-500">
+                    {oneLine(r.address)}
+                  </span>
+                )}
+              </Td>
               <Td>
                 {r.description}
                 {r.specs && <span className="text-stone-500"> · {r.specs}</span>}
