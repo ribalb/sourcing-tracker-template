@@ -175,6 +175,11 @@ const DICT = {
     "report.generated": "Generated",
     "report.date": "Date",
     "report.confidential": "Internal report — contains cost and profit. Not for clients.",
+    "report.columns": "Columns on the PDF",
+    "report.columnsHint":
+      "Tap a column to leave it off the printed page. Handing the sheet to a driver? Drop Cost and Profit. The Excel file always has everything.",
+    "report.colsAll": "Everything",
+    "report.colsDelivery": "For the delivery",
     "dash.billed": "Total billed",
     "dash.cost": "Total cost",
     "dash.profit": "Profit",
@@ -489,6 +494,11 @@ const DICT = {
     "report.generated": "تاريخ الإصدار",
     "report.date": "التاريخ",
     "report.confidential": "تقرير داخلي — يحتوي التكلفة والربح. غير مخصص للزبائن.",
+    "report.columns": "أعمدة ملف PDF",
+    "report.columnsHint":
+      "اضغطي على أي عمود لإخفائه من الصفحة المطبوعة. عند إعطاء الورقة لعامل التوصيل، أخفي التكلفة والربح. ملف Excel يبقى كاملاً دائماً.",
+    "report.colsAll": "كل الأعمدة",
+    "report.colsDelivery": "نسخة التوصيل",
     "dash.billed": "إجمالي المبيعات",
     "dash.cost": "إجمالي التكلفة",
     "dash.profit": "الربح",

@@ -38,6 +38,48 @@ function oneLine(address: string | null | undefined): string {
   return (address ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).join(", ");
 }
 
+/**
+ * The columns of the printed report, and how wide each wants to be.
+ *
+ * The same sheet goes to two different people. The owner's copy shows what
+ * everything cost and what it made; the copy handed to whoever drives the
+ * order over must show neither. So the columns are a list to choose from
+ * rather than nine fixed ones, and the weights are re-shared among whatever
+ * survives — a fixed table with four columns and 100% of width declared
+ * across nine leaves most of the page empty.
+ *
+ * Weights sum to 100 when everything is on, which is where they came from.
+ */
+const COLUMNS = [
+  { key: "date", label: "report.date", weight: 11 },
+  { key: "client", label: "clients.name", weight: 12 },
+  { key: "address", label: "req.reqAddress", weight: 18 },
+  { key: "description", label: "item.description", weight: 17 },
+  { key: "status", label: "item.status", weight: 8 },
+  { key: "price", label: "item.price", weight: 8.5, right: true },
+  { key: "cost", label: "item.cost", weight: 8.5, right: true },
+  { key: "profit", label: "item.profit", weight: 8.5, right: true },
+  { key: "deposit", label: "item.deposit", weight: 8.5, right: true },
+] as const satisfies readonly { key: string; label: TKey; weight: number; right?: boolean }[];
+
+type ColKey = (typeof COLUMNS)[number]["key"];
+
+const ALL_COLUMNS = COLUMNS.map((c) => c.key) as ColKey[];
+
+/**
+ * What the driver may see: where it goes and what it is, plus the money the
+ * client already knows about. Not what it cost you, and not what you made.
+ */
+const DELIVERY_COLUMNS: ColKey[] = [
+  "date",
+  "client",
+  "address",
+  "description",
+  "status",
+  "price",
+  "deposit",
+];
+
 export default function DashboardPage() {
   const { t, lang } = useI18n();
 
@@ -46,6 +88,13 @@ export default function DashboardPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [status, setStatus] = useState<Status | "all">("all");
+
+  /**
+   * Deliberately not remembered between visits. Whatever was left ticked for
+   * a driver last week must not quietly decide what your own copy shows.
+   * It starts as the full report every time, and hiding is a thing you do.
+   */
+  const [cols, setCols] = useState<ColKey[]>(ALL_COLUMNS);
 
   useEffect(() => {
     let alive = true;
@@ -232,9 +281,63 @@ export default function DashboardPage() {
           <Button variant="secondary" onClick={exportExcel} disabled={filtered.length === 0}>
             {t("report.excel")}
           </Button>
-          <Button variant="secondary" onClick={() => window.print()} disabled={filtered.length === 0}>
+          <Button
+            variant="secondary"
+            onClick={() => window.print()}
+            disabled={filtered.length === 0 || cols.length === 0}
+          >
             {t("report.pdf")}
           </Button>
+        </div>
+
+        {/* --------------------------------------------- columns on paper */}
+        <div className="mt-4 border-t border-cream-200 pt-3">
+          <h3 className="text-sm font-semibold text-stone-700">{t("report.columns")}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-stone-500">{t("report.columnsHint")}</p>
+
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {COLUMNS.map((c) => {
+              const on = cols.includes(c.key);
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setCols((prev) =>
+                      prev.includes(c.key)
+                        ? prev.filter((k) => k !== c.key)
+                        : ALL_COLUMNS.filter((k) => k === c.key || prev.includes(k)),
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    on
+                      ? "border-ink bg-ink text-cream-50"
+                      : "border-cream-300 bg-white text-stone-500 line-through"
+                  }`}
+                >
+                  {t(c.label)}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-4 text-sm">
+            <button
+              type="button"
+              onClick={() => setCols(ALL_COLUMNS)}
+              className="font-medium text-stone-600 underline underline-offset-4 hover:text-ink"
+            >
+              {t("report.colsAll")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCols(DELIVERY_COLUMNS)}
+              className="font-medium text-stone-600 underline underline-offset-4 hover:text-ink"
+            >
+              {t("report.colsDelivery")}
+            </button>
+          </div>
         </div>
       </Card>
 
@@ -284,6 +387,7 @@ export default function DashboardPage() {
         rangeLabel={rangeLabel}
         statusLabel={statusLabel}
         totals={totals}
+        cols={cols}
       />
     </div>
   );
@@ -298,13 +402,52 @@ function PrintableReport({
   rangeLabel,
   statusLabel,
   totals,
+  cols,
 }: {
   rows: Row[];
   rangeLabel: string;
   statusLabel: string;
   totals: ReturnType<typeof totalsOf>;
+  cols: ColKey[];
 }) {
   const { t, lang } = useI18n();
+
+  const shown = COLUMNS.filter((c) => cols.includes(c.key));
+  const span = shown.reduce((sum, c) => sum + c.weight, 0) || 1;
+
+  const has = (k: ColKey) => cols.includes(k);
+
+  /** A cost or profit total under a table with no cost column hands over the
+      very number the column was removed to hide. */
+  const showsMoney = has("price") || has("cost") || has("profit") || has("deposit");
+
+  function cell(key: ColKey, r: Row): React.ReactNode {
+    switch (key) {
+      case "date":
+        return formatDate(r.created_at, lang);
+      case "client":
+        return r.client;
+      case "address":
+        return r.address ? oneLine(r.address) : "—";
+      case "description":
+        return (
+          <>
+            {r.description}
+            {r.specs && <span className="text-stone-500"> · {r.specs}</span>}
+          </>
+        );
+      case "status":
+        return t(`status.${r.status}` as TKey);
+      case "price":
+        return r.price === null ? "—" : money(r.price);
+      case "cost":
+        return r.cost === null ? "—" : money(r.cost);
+      case "profit":
+        return r.price === null || r.cost === null ? "—" : money(r.price - r.cost);
+      case "deposit":
+        return money(r.deposit);
+    }
+  }
 
   return (
     <div className="hidden print:block">
@@ -319,64 +462,55 @@ function PrintableReport({
         </p>
       </header>
 
-      {/* Fixed layout with declared widths: nine columns left to size themselves
-          let the address and the description fight, and the money columns lose. */}
+      {/* Fixed layout with declared widths: columns left to size themselves let
+          the address and the description fight, and the money columns lose. */}
       <table className="w-full table-fixed border-collapse text-[11px]">
         <colgroup>
-          <col className="w-[11%]" /> {/* date — enough for "30 Sep 2026" unbroken */}
-          <col className="w-[12%]" />
-          <col className="w-[18%]" /> {/* address */}
-          <col className="w-[17%]" />
-          <col className="w-[8%]" />
-          <col className="w-[8.5%]" /> {/* money — fits "$1,240.98" on one line */}
-          <col className="w-[8.5%]" />
-          <col className="w-[8.5%]" />
-          <col className="w-[8.5%]" />
+          {shown.map((c) => (
+            /* Percentages of whatever is left, not of nine — a width has to be
+               computed, so this one is a style rather than a class. */
+            <col key={c.key} style={{ width: `${(c.weight / span) * 100}%` }} />
+          ))}
         </colgroup>
         <thead>
           <tr className="border-b border-stone-400 text-start">
-            <Th>{t("report.date")}</Th>
-            <Th>{t("clients.name")}</Th>
-            <Th>{t("req.reqAddress")}</Th>
-            <Th>{t("item.description")}</Th>
-            <Th>{t("item.status")}</Th>
-            <Th right>{t("item.price")}</Th>
-            <Th right>{t("item.cost")}</Th>
-            <Th right>{t("item.profit")}</Th>
-            <Th right>{t("item.deposit")}</Th>
+            {shown.map((c) => (
+              <Th key={c.key} right={"right" in c && c.right}>
+                {t(c.label)}
+              </Th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-stone-200">
-              <Td>{formatDate(r.created_at, lang)}</Td>
-              <Td>{r.client}</Td>
-              <Td>{r.address ? oneLine(r.address) : "—"}</Td>
-              <Td>
-                {r.description}
-                {r.specs && <span className="text-stone-500"> · {r.specs}</span>}
-              </Td>
-              <Td>{t(`status.${r.status}` as TKey)}</Td>
-              <Td right>{r.price === null ? "—" : money(r.price)}</Td>
-              <Td right>{r.cost === null ? "—" : money(r.cost)}</Td>
-              <Td right>
-                {r.price === null || r.cost === null ? "—" : money(r.price - r.cost)}
-              </Td>
-              <Td right>{money(r.deposit)}</Td>
+              {shown.map((c) => (
+                <Td key={c.key} right={"right" in c && c.right}>
+                  {cell(c.key, r)}
+                </Td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="mt-5 border-t border-stone-400 pt-3 text-xs">
-        <Total label={t("dash.billed")} value={money(totals.billed)} />
-        <Total label={t("dash.cost")} value={money(totals.cost)} />
-        <Total label={t("dash.profit")} value={money(totals.profit)} strong />
-        <Total label={t("dash.deposits")} value={money(totals.deposits)} />
-        <Total label={t("dash.balance")} value={money(totals.balance)} />
-      </div>
+      {showsMoney && (
+        <div className="mt-5 border-t border-stone-400 pt-3 text-xs">
+          {has("price") && <Total label={t("dash.billed")} value={money(totals.billed)} />}
+          {has("cost") && <Total label={t("dash.cost")} value={money(totals.cost)} />}
+          {has("profit") && <Total label={t("dash.profit")} value={money(totals.profit)} strong />}
+          {has("deposit") && <Total label={t("dash.deposits")} value={money(totals.deposits)} />}
+          {has("price") && has("deposit") && (
+            <Total label={t("dash.balance")} value={money(totals.balance)} />
+          )}
+        </div>
+      )}
 
-      <p className="mt-6 text-[10px] text-stone-500">{t("report.confidential")}</p>
+      {/* The warning belongs on the copy that earns it. On a delivery sheet it
+          would be both untrue and an invitation to look for what isn't there. */}
+      {(has("cost") || has("profit")) && (
+        <p className="mt-6 text-[10px] text-stone-500">{t("report.confidential")}</p>
+      )}
     </div>
   );
 }
