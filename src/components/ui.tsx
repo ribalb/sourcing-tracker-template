@@ -163,6 +163,11 @@ export function Money(props: InputHTMLAttributes<HTMLInputElement>) {
         step="0.01"
         min="0"
         dir="ltr"
+        // A focused number input reads the wheel as up/down. Typing 140 and
+        // then scrolling to reach Save quietly saved 139.98 — and since the
+        // spinner arrows are hidden (globals.css), nothing suggested the
+        // field was a stepper. Dropping focus lets the page scroll instead.
+        onWheel={(e) => e.currentTarget.blur()}
         className={`${inputClass} ${dir === "rtl" ? "pr-8 text-right" : "pl-7"} ${
           props.className ?? ""
         }`}
