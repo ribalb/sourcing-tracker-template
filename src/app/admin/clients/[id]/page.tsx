@@ -852,19 +852,23 @@ function ItemForm({
           </p>
           <div className="space-y-3">
             <Field label={t("item.cost")} optional hint={t("item.costHint")}>
+              {/* Width lives on the wrapper: a w-28 on Select itself loses
+                  to the w-full inside it, which is decided by stylesheet
+                  order and not by which class is written last. */}
               <div className="flex gap-2">
-                <Select
-                  aria-label={t("item.costCurrency")}
-                  className="w-28 shrink-0"
-                  value={currency}
-                  onChange={(e) => changeCurrency(e.target.value as BuyCurrency)}
-                >
-                  {BUY_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {CURRENCY_SYMBOL[c]} {c}
-                    </option>
-                  ))}
-                </Select>
+                <div className="w-24 shrink-0 sm:w-28">
+                  <Select
+                    aria-label={t("item.costCurrency")}
+                    value={currency}
+                    onChange={(e) => changeCurrency(e.target.value as BuyCurrency)}
+                  >
+                    {BUY_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {CURRENCY_SYMBOL[c]} {c}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
                 <div className="min-w-0 flex-1">
                   <Money
                     value={cost}
@@ -877,26 +881,33 @@ function ItemForm({
 
             {/* Only in the way when something was actually converted. */}
             {currency !== "USD" && (
-              <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white/70 px-3 py-2.5">
+              <div className="flex items-end justify-between gap-3 rounded-lg bg-white/70 px-3 py-2.5">
                 <label className="min-w-0">
                   <span className="mb-1 block text-xs font-medium text-amber-800">
                     {fill(t("item.costRate"), { cur: currency })}
                   </span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.0001"
-                    min="0"
-                    dir="ltr"
-                    className="w-28"
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    onWheel={(e) => e.currentTarget.blur()}
-                  />
+                  <div className="w-24 sm:w-28">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.0001"
+                      min="0"
+                      dir="ltr"
+                      value={rate}
+                      onChange={(e) => setRate(e.target.value)}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                  </div>
                 </label>
-                <p className="pb-2.5 text-sm text-amber-900">
-                  <span className="text-amber-700">= </span>
-                  <span className="font-semibold tabular-nums">{moneyOrDash(costUsd)}</span>
+
+                {/* The number that actually gets saved, so it is the one that reads loudest. */}
+                <p className="pb-1.5 text-end">
+                  <span className="block text-xs font-medium text-amber-800">
+                    {t("item.costInUsd")}
+                  </span>
+                  <span className="text-lg font-semibold tabular-nums text-amber-900">
+                    {moneyOrDash(costUsd)}
+                  </span>
                 </p>
               </div>
             )}

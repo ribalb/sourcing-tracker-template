@@ -138,6 +138,12 @@ export function Field({
   );
 }
 
+/*
+ * Note the `w-full`: passing a width through `className` will not override
+ * it. Tailwind decides between two width utilities by their order in the
+ * stylesheet, not by which one is written last in the attribute. To make a
+ * field narrower, wrap it in a sized div instead.
+ */
 const inputClass =
   "w-full rounded-xl border border-cream-300 bg-white px-3.5 py-2.5 text-[16px] text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10";
 
