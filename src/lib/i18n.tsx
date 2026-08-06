@@ -59,7 +59,10 @@ const DICT = {
     "req.mapClear": "Remove",
     "req.mapOr": "or paste a link",
     "req.mapDenied":
-      "Your phone didn't share the location. You can paste a map link instead.",
+      "Your phone is blocking location for this site. Allow it in your browser settings — or just paste a map link below.",
+    "req.mapNoFix":
+      "Couldn't find you — that happens indoors. Try again by a window, or paste a map link below.",
+    "req.mapNoGeo": "This browser can't share a location here. Paste a map link below instead.",
     "req.mapBad": "That doesn't look like a map link — Google Maps, Apple Maps or Waze.",
 
     "req.itemsTitle": "What you're looking for",
@@ -369,7 +372,11 @@ const DICT = {
     "req.mapCheck": "عرض الموقع",
     "req.mapClear": "إزالة",
     "req.mapOr": "أو لصق رابط",
-    "req.mapDenied": "لم يشارك الهاتف الموقع. يمكن لصق رابط خريطة بدلاً من ذلك.",
+    "req.mapDenied":
+      "الهاتف يمنع مشاركة الموقع مع هذه الصفحة. يمكن السماح به من إعدادات المتصفح، أو لصق رابط خريطة في الأسفل.",
+    "req.mapNoFix":
+      "تعذّر تحديد الموقع — يحدث هذا داخل المباني. يمكن المحاولة قرب نافذة، أو لصق رابط خريطة في الأسفل.",
+    "req.mapNoGeo": "هذا المتصفح لا يستطيع مشاركة الموقع هنا. يمكن لصق رابط خريطة في الأسفل.",
     "req.mapBad": "هذا لا يبدو رابط خريطة — خرائط Google أو Apple أو Waze.",
 
     "req.itemsTitle": "ما الذي تبحث عنه",

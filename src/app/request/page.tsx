@@ -44,26 +44,52 @@ export default function RequestPage() {
    * navigator.geolocation, like navigator.clipboard, exists only on https or
    * localhost — so this button does nothing when the app is opened by IP over
    * wifi for testing. The pasted link is the way in when that happens.
+   *
+   * The three ways this fails need three different sentences. Refused is the
+   * only one the customer can do something about, and it is silent: once a
+   * phone has been told no, it stops asking, so "didn't share" reads as a
+   * broken button rather than a setting to change.
    */
   function locate() {
     if (!navigator.geolocation) {
-      setMapError(t("req.mapDenied"));
+      setMapError(t("req.mapNoGeo"));
       return;
     }
 
     setLocating(true);
     setMapError(null);
 
+    const pin = (pos: GeolocationPosition) => {
+      setLocating(false);
+      setMapUrl(pinUrl(pos.coords.latitude, pos.coords.longitude));
+    };
+
+    const fail = (err: GeolocationPositionError) => {
+      setLocating(false);
+      setMapError(t(err.code === err.PERMISSION_DENIED ? "req.mapDenied" : "req.mapNoFix"));
+    };
+
+    /**
+     * Indoors, a satellite fix can take longer than anyone is willing to
+     * stand still for — and a flat on the third floor is exactly where these
+     * requests are written. So a slow or failed precise attempt drops to the
+     * coarse one, which wifi answers almost at once. A pin on the right
+     * building beats no pin at all; the written address carries the rest.
+     */
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        setMapUrl(pinUrl(pos.coords.latitude, pos.coords.longitude));
+      pin,
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          fail(err);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(pin, fail, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
       },
-      () => {
-        setLocating(false);
-        setMapError(t("req.mapDenied"));
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
     );
   }
 
