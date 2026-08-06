@@ -29,6 +29,13 @@ export default function SettingsPage() {
   const [rateEur, setRateEur] = useState("1.08");
   const [rateSar, setRateSar] = useState("0.2667");
 
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [repeat, setRepeat] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwDone, setPwDone] = useState(false);
+
   const requestUrl = `${
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== "undefined" ? window.location.origin : "")
@@ -63,6 +70,62 @@ export default function SettingsPage() {
         setLoaded(true);
       });
   }, []);
+
+  /**
+   * The only place a password can be set from outside the Supabase dashboard.
+   *
+   * The current password is asked for even though Supabase does not require
+   * it: this app stays signed in on a phone for weeks, and without it anyone
+   * who picks up an unlocked handset could lock the owner out of her own
+   * business. It is checked by signing in again, which is the only way the
+   * browser SDK can prove the person at the keyboard is the account holder.
+   */
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwDone(false);
+
+    if (next.length < 8) {
+      setPwError(t("settings.pwShort"));
+      return;
+    }
+    if (next !== repeat) {
+      setPwError(t("settings.pwMismatch"));
+      return;
+    }
+
+    setPwBusy(true);
+    const sb = supabaseBrowser();
+
+    const { data } = await sb.auth.getUser();
+    const email = data.user?.email;
+    if (!email) {
+      setPwBusy(false);
+      setPwError(t("settings.pwFailed"));
+      return;
+    }
+
+    const check = await sb.auth.signInWithPassword({ email, password: current });
+    if (check.error) {
+      setPwBusy(false);
+      setPwError(t("settings.pwWrong"));
+      return;
+    }
+
+    const { error } = await sb.auth.updateUser({ password: next });
+    setPwBusy(false);
+
+    if (error) {
+      setPwError(error.message);
+      return;
+    }
+
+    setCurrent("");
+    setNext("");
+    setRepeat("");
+    setPwDone(true);
+    setTimeout(() => setPwDone(false), 5000);
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -252,6 +315,60 @@ export default function SettingsPage() {
           }}
         />
       </div>
+
+      {/* ------------------------------------------------------ your password */}
+      <Card>
+        <form onSubmit={changePassword} className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-stone-700">{t("settings.password")}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+              {t("settings.passwordHint")}
+            </p>
+          </div>
+
+          <Field label={t("settings.pwCurrent")}>
+            <Input
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t("settings.pwNew")} hint={t("settings.pwRule")}>
+              <Input
+                type="password"
+                autoComplete="new-password"
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+              />
+            </Field>
+            <Field label={t("settings.pwRepeat")}>
+              <Input
+                type="password"
+                autoComplete="new-password"
+                value={repeat}
+                onChange={(e) => setRepeat(e.target.value)}
+              />
+            </Field>
+          </div>
+
+          {pwError && <ErrorNote message={pwError} />}
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="submit"
+              disabled={pwBusy || !current || !next || !repeat}
+            >
+              {pwBusy ? t("common.saving") : t("settings.pwChange")}
+            </Button>
+            {pwDone && (
+              <span className="text-sm font-medium text-emerald-700">{t("settings.pwDone")}</span>
+            )}
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

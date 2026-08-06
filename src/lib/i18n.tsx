@@ -116,6 +116,20 @@ const DICT = {
     "settings.rateSar": "1 riyal in dollars",
     "settings.rateSarHint": "Pegged at 3.75 to the dollar.",
 
+    "settings.password": "Your password",
+    "settings.passwordHint":
+      "This is the password for /admin. Only you know it — change it here whenever you like. You stay signed in afterwards.",
+    "settings.pwCurrent": "Current password",
+    "settings.pwNew": "New password",
+    "settings.pwRepeat": "Repeat new password",
+    "settings.pwRule": "At least 8 characters.",
+    "settings.pwChange": "Change password",
+    "settings.pwDone": "Password changed ✓",
+    "settings.pwShort": "Use at least 8 characters.",
+    "settings.pwMismatch": "The two new passwords are not the same.",
+    "settings.pwWrong": "That current password is not right.",
+    "settings.pwFailed": "Could not change the password. Sign out, sign in again, and retry.",
+
     "login.title": "Sign in",
     "login.subtitle": "Owner access only",
     "login.email": "Email",
@@ -395,6 +409,20 @@ const DICT = {
     "settings.rateEur": "قيمة اليورو بالدولار",
     "settings.rateSar": "قيمة الريال بالدولار",
     "settings.rateSarHint": "مثبّت على 3.75 للدولار.",
+
+    "settings.password": "كلمة السر",
+    "settings.passwordHint":
+      "كلمة سر الدخول إلى /admin. أنتِ وحدك تعرفينها، ويمكنك تغييرها هنا متى شئتِ. يبقى الدخول قائماً بعد التغيير.",
+    "settings.pwCurrent": "كلمة السر الحالية",
+    "settings.pwNew": "كلمة السر الجديدة",
+    "settings.pwRepeat": "أعيدي كتابة الجديدة",
+    "settings.pwRule": "8 أحرف على الأقل.",
+    "settings.pwChange": "تغيير كلمة السر",
+    "settings.pwDone": "تم تغيير كلمة السر ✓",
+    "settings.pwShort": "استخدمي 8 أحرف على الأقل.",
+    "settings.pwMismatch": "كلمتا السر الجديدتان غير متطابقتين.",
+    "settings.pwWrong": "كلمة السر الحالية غير صحيحة.",
+    "settings.pwFailed": "تعذّر تغيير كلمة السر. سجّلي الخروج ثم الدخول وحاولي مجدداً.",
 
 
     "login.title": "تسجيل الدخول",
