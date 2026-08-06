@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { copyText } from "@/lib/clipboard";
+import { toNumber } from "@/lib/format";
 import type { Settings } from "@/lib/types";
 import { PaySection } from "@/components/pay-section";
 import { Button, Card, ErrorNote, Field, Input, Loading, Textarea } from "@/components/ui";
@@ -23,6 +24,10 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  /** Dollars per one euro / one riyal. Only ever a starting point — see below. */
+  const [rateEur, setRateEur] = useState("1.08");
+  const [rateSar, setRateSar] = useState("0.2667");
 
   const requestUrl = `${
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -52,6 +57,8 @@ export default function SettingsPage() {
           setAccount(s.pay_account ?? "");
           setAccountName(s.pay_account_name ?? "");
           setWhatsapp(s.owner_whatsapp ?? "");
+          setRateEur(String(s.rate_eur ?? "1.08"));
+          setRateSar(String(s.rate_sar ?? "0.2667"));
         }
         setLoaded(true);
       });
@@ -71,6 +78,8 @@ export default function SettingsPage() {
         pay_account: account.trim() || null,
         pay_account_name: accountName.trim() || null,
         owner_whatsapp: whatsapp.trim() || null,
+        rate_eur: toNumber(rateEur) ?? 1.08,
+        rate_sar: toNumber(rateSar) ?? 0.2667,
       })
       .eq("id", true);
 
@@ -156,6 +165,43 @@ export default function SettingsPage() {
               placeholder="+961 71 622 967"
             />
           </Field>
+
+          <hr className="border-cream-200" />
+
+          {/* ------------------------------------------------ buying rates */}
+          <div>
+            <h2 className="text-sm font-semibold text-stone-700">{t("settings.rates")}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+              {t("settings.ratesHint")}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t("settings.rateEur")}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.0001"
+                min="0"
+                dir="ltr"
+                value={rateEur}
+                onChange={(e) => setRateEur(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </Field>
+            <Field label={t("settings.rateSar")} hint={t("settings.rateSarHint")}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.0001"
+                min="0"
+                dir="ltr"
+                value={rateSar}
+                onChange={(e) => setRateSar(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </Field>
+          </div>
 
           <hr className="border-cream-200" />
 

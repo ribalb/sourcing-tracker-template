@@ -109,6 +109,13 @@ const DICT = {
     "settings.preview": "This is what your client sees:",
     "settings.preview2": "Preview the form",
 
+    "settings.rates": "Buying rates",
+    "settings.ratesHint":
+      "Where the cost field starts when you buy in euros or riyals. Each item keeps the rate you saved it with, so changing these never alters an old order.",
+    "settings.rateEur": "1 euro in dollars",
+    "settings.rateSar": "1 riyal in dollars",
+    "settings.rateSarHint": "Pegged at 3.75 to the dollar.",
+
     "login.title": "Sign in",
     "login.subtitle": "Owner access only",
     "login.email": "Email",
@@ -196,6 +203,11 @@ const DICT = {
     "item.budget": "Their budget",
     "item.status": "Status",
     "item.cost": "Your cost",
+    "item.costHint": "Enter what you actually paid. Saved in dollars.",
+    "item.costCurrency": "Currency paid in",
+    "item.costRate": "1 {cur} in dollars",
+    "item.costPaid": "Paid {amount} at {rate}",
+    "item.rateMissing": "Add the rate, or switch the cost back to dollars.",
     "item.price": "Price for client",
     "item.deposit": "Deposit paid",
     "item.note": "Private note",
@@ -376,6 +388,13 @@ const DICT = {
     "settings.preview": "هذا ما يراه الزبون:",
     "settings.preview2": "معاينة النموذج",
 
+    "settings.rates": "أسعار الشراء",
+    "settings.ratesHint":
+      "النقطة التي يبدأ منها حقل التكلفة عند الشراء باليورو أو بالريال. كل قطعة تحتفظ بالسعر الذي حُفظت به، لذا تعديل هذه الأرقام لا يغيّر أي طلب سابق.",
+    "settings.rateEur": "قيمة اليورو بالدولار",
+    "settings.rateSar": "قيمة الريال بالدولار",
+    "settings.rateSarHint": "مثبّت على 3.75 للدولار.",
+
 
     "login.title": "تسجيل الدخول",
     "login.subtitle": "للمالكة فقط",
@@ -460,6 +479,11 @@ const DICT = {
     "item.budget": "ميزانية الزبون",
     "item.status": "الحالة",
     "item.cost": "التكلفة عليكِ",
+    "item.costHint": "أدخلي المبلغ الذي دفعتِه فعلاً. يُحفظ بالدولار.",
+    "item.costCurrency": "عملة الشراء",
+    "item.costRate": "قيمة 1 {cur} بالدولار",
+    "item.costPaid": "دُفع {amount} بسعر {rate}",
+    "item.rateMissing": "أضيفي سعر الصرف، أو أعيدي التكلفة إلى الدولار.",
     "item.price": "السعر للزبون",
     "item.deposit": "العربون المدفوع",
     "item.note": "ملاحظة خاصة",

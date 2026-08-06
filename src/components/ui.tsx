@@ -145,7 +145,15 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputClass} ${props.className ?? ""}`} />;
 }
 
-export function Money(props: InputHTMLAttributes<HTMLInputElement>) {
+/**
+ * `symbol` is only for the cost field, which may be taken in euros or
+ * riyals. Everything else the business quotes — price, deposit, budget —
+ * is dollars and leaves it alone.
+ */
+export function Money({
+  symbol = "$",
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { symbol?: string }) {
   const { dir } = useI18n();
   return (
     <div className="relative">
@@ -154,7 +162,7 @@ export function Money(props: InputHTMLAttributes<HTMLInputElement>) {
           dir === "rtl" ? "right-3.5" : "left-3.5"
         }`}
       >
-        $
+        {symbol}
       </span>
       <input
         {...props}

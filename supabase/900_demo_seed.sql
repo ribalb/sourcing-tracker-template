@@ -77,6 +77,20 @@ insert into public.items
   ('11111111-1111-4111-8111-111111111104', 'Leather belt',            '80cm, cognac',        70, 'closed',     34,  85,  85, null,                         now() - interval '52 days');
 
 -- ------------------------------------------------------------
+-- Two of the above were bought abroad rather than in dollars, so the
+-- cost field shows what it does on a real buying trip. `cost` itself is
+-- already the dollar figure; these columns only record what was handed
+-- over, which is what the item card shows underneath.
+-- ------------------------------------------------------------
+update public.items
+   set cost_currency = 'EUR', cost_original = 264.00, cost_rate = 1.080000
+ where description = 'Wool coat, camel';               -- cost 285 = 264 EUR
+
+update public.items
+   set cost_currency = 'SAR', cost_original = 360.00, cost_rate = 0.266700
+ where description = 'Crossbody bag';                  -- cost 165 ≈ 360 SAR
+
+-- ------------------------------------------------------------
 -- Two requests waiting in the inbox, so the badge shows "2"
 -- and the approval flow can be demonstrated live.
 --

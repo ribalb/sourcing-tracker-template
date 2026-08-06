@@ -25,6 +25,30 @@ export const isBillable = (s: Status) => s !== "canceled";
  */
 export const isClosed = (s: Status) => s === "closed";
 
+/**
+ * Currencies an item can be *bought* in. Clients are still billed in USD
+ * only — see the note in CLAUDE.md; this is about the cost side alone.
+ */
+export const BUY_CURRENCIES = ["USD", "EUR", "SAR"] as const;
+export type BuyCurrency = (typeof BUY_CURRENCIES)[number];
+
+/** What one unit is worth in dollars, and how to write it. */
+export const CURRENCY_SYMBOL: Record<BuyCurrency, string> = {
+  USD: "$",
+  EUR: "€",
+  SAR: "﷼",
+};
+
+/**
+ * Dollars, from an amount in another currency.
+ *
+ * Rounded to the cent on the way in, so the stored cost is a real figure
+ * rather than something that shows as $75.60 and adds up as $75.6003.
+ */
+export function toUsd(amount: number, rate: number): number {
+  return Math.round(amount * rate * 100) / 100;
+}
+
 export type Client = {
   id: string;
   name: string;
@@ -44,7 +68,12 @@ export type Item = {
   specs: string | null;
   budget: number | null;
   status: Status;
+  /** ALWAYS US dollars, whatever was actually handed over. */
   cost: number | null;
+  /** What was paid, before conversion. All three null when paid in dollars. */
+  cost_currency: BuyCurrency | null;
+  cost_original: number | null;
+  cost_rate: number | null;
   price: number | null;
   deposit: number;
   note: string | null;
@@ -137,6 +166,9 @@ export type Settings = {
   pay_account: string | null;
   pay_account_name: string | null;
   owner_whatsapp: string | null;
+  /** Dollars per one euro / one riyal. What the item form starts from. */
+  rate_eur: number;
+  rate_sar: number;
   updated_at: string;
 };
 

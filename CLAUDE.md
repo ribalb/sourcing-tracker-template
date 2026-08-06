@@ -39,7 +39,14 @@ sign-up step means they message the owner instead of self-serving.
   this. Filtering in React would still send the numbers to their browser.
 - **One deposit field per item**, not a payments table. Enough for balance due
   without a ledger.
-- **USD only.** No exchange rates.
+- **Clients are billed in USD only.** No multi-currency prices, no rates on
+  anything a client sees. The *cost* side is the exception: items can be bought
+  in EUR or SAR, because that is where the money actually goes. `items.cost` is
+  still always dollars — every total, export and profit figure reads it and
+  needs no currency logic. `cost_currency` / `cost_original` / `cost_rate` sit
+  alongside it and record only what was handed over, so €70 stays legible next
+  to $75.60. Rates are typed in Settings and copied onto each item at save
+  time; editing a rate later never rewrites an old order.
 - **Arabic ⇄ English**, all copy in `src/lib/i18n.tsx` and nowhere else. The
   `msg.*` WhatsApp templates are gender-neutral in Arabic because the customer's
   gender is unknown; the rest of the Arabic UI addresses the owner.

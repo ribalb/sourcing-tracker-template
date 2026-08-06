@@ -9,7 +9,18 @@ import { fill, formatDate, money, moneyOrDash, toNumber, waNumber } from "@/lib/
 import { copyText } from "@/lib/clipboard";
 import { photoUrl } from "@/lib/photos";
 import { PhotoField } from "@/components/photo-field";
-import { isClosed, totalsOf, type Client, type Item, type Status } from "@/lib/types";
+import {
+  BUY_CURRENCIES,
+  CURRENCY_SYMBOL,
+  isClosed,
+  totalsOf,
+  toUsd,
+  type BuyCurrency,
+  type Client,
+  type Item,
+  type Settings,
+  type Status,
+} from "@/lib/types";
 import {
   Button,
   Card,
@@ -48,6 +59,13 @@ export default function ClientPage() {
   const [addressDraft, setAddressDraft] = useState("");
   const [busyAddress, setBusyAddress] = useState(false);
 
+  /**
+   * What the item form starts a euro or riyal cost from. Loaded here so a
+   * form that opens has them already; each item keeps whatever rate it was
+   * saved with, so editing these later never rewrites an old figure.
+   */
+  const [rates, setRates] = useState({ eur: 1.08, sar: 0.2667 });
+
   const [others, setOthers] = useState<Client[]>([]);
   const [merging, setMerging] = useState(false);
   const [mergeTarget, setMergeTarget] = useState("");
@@ -78,6 +96,16 @@ export default function ClientPage() {
       .neq("id", clientId)
       .order("name");
     setOthers((rest ?? []) as Client[]);
+
+    const { data: s } = await sb
+      .from("settings")
+      .select("rate_eur,rate_sar")
+      .eq("id", true)
+      .maybeSingle();
+    if (s) {
+      const row = s as Pick<Settings, "rate_eur" | "rate_sar">;
+      setRates({ eur: Number(row.rate_eur), sar: Number(row.rate_sar) });
+    }
 
     setLoading(false);
   }, [clientId]);
@@ -387,6 +415,7 @@ export default function ClientPage() {
       {addingItem && (
         <ItemForm
           clientId={clientId}
+          rates={rates}
           onDone={async () => {
             setAddingItem(false);
             await load();
@@ -491,6 +520,7 @@ export default function ClientPage() {
                 <ItemForm
                   clientId={clientId}
                   item={item}
+                  rates={rates}
                   onDone={async () => {
                     setEditingId(null);
                     await load();
@@ -542,6 +572,17 @@ export default function ClientPage() {
                         strong
                       />
                     </dl>
+
+                    {/* Say what was handed over, so $75.60 stays recognisable. */}
+                    {item.cost_currency && (
+                      <p className="mt-1 text-xs text-amber-800">
+                        {fill(t("item.costPaid"), {
+                          amount: `${CURRENCY_SYMBOL[item.cost_currency]}${item.cost_original}`,
+                          rate: String(item.cost_rate),
+                        })}
+                      </p>
+                    )}
+
                     {item.note && (
                       <p className="mt-2 border-t border-amber-200 pt-2 text-xs text-amber-900">
                         {item.note}
@@ -661,11 +702,13 @@ function Row({
 function ItemForm({
   clientId,
   item,
+  rates,
   onDone,
   onCancel,
 }: {
   clientId: string;
   item?: Item;
+  rates: { eur: number; sar: number };
   onDone: () => void | Promise<void>;
   onCancel: () => void;
 }) {
@@ -675,7 +718,17 @@ function ItemForm({
   const [specs, setSpecs] = useState(item?.specs ?? "");
   const [budget, setBudget] = useState(item?.budget?.toString() ?? "");
   const [status, setStatus] = useState<Status>(item?.status ?? "requested");
-  const [cost, setCost] = useState(item?.cost?.toString() ?? "");
+
+  /*
+   * Cost is typed in whatever was actually paid and stored in dollars.
+   * `cost` here is the typed figure, not the saved one — for a euro item
+   * it holds 70 while the database holds 75.60.
+   */
+  const [currency, setCurrency] = useState<BuyCurrency>(item?.cost_currency ?? "USD");
+  const [cost, setCost] = useState(
+    (item?.cost_currency ? item?.cost_original : item?.cost)?.toString() ?? "",
+  );
+  const [rate, setRate] = useState(item?.cost_rate?.toString() ?? "");
   const [price, setPrice] = useState(item?.price?.toString() ?? "");
   const [deposit, setDeposit] = useState(item?.deposit?.toString() ?? "");
   const [note, setNote] = useState(item?.note ?? "");
@@ -685,12 +738,36 @@ function ItemForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Switching currency loads that currency's rate, unless one is already typed. */
+  function changeCurrency(next: BuyCurrency) {
+    setCurrency(next);
+    if (next === "USD") {
+      setRate("");
+      return;
+    }
+    setRate(String(next === "EUR" ? rates.eur : rates.sar));
+  }
+
+  const typed = toNumber(cost);
+  const usedRate = currency === "USD" ? 1 : (toNumber(rate) ?? 0);
+
+  /** What actually gets stored, and what profit is worked out from. */
+  const costUsd = typed === null ? null : toUsd(typed, usedRate);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!description.trim()) return;
 
+    // A euro cost with no rate would silently save as nothing.
+    if (currency !== "USD" && typed !== null && !(usedRate > 0)) {
+      setError(t("item.rateMissing"));
+      return;
+    }
+
     setBusy(true);
     setError(null);
+
+    const converted = currency !== "USD" && typed !== null;
 
     const payload = {
       client_id: clientId,
@@ -698,7 +775,10 @@ function ItemForm({
       specs: specs.trim() || null,
       budget: toNumber(budget),
       status,
-      cost: toNumber(cost),
+      cost: costUsd,
+      cost_currency: converted ? currency : null,
+      cost_original: converted ? typed : null,
+      cost_rate: converted ? usedRate : null,
       price: toNumber(price),
       deposit: toNumber(deposit) ?? 0,
       note: note.trim() || null,
@@ -771,15 +851,61 @@ function ItemForm({
             {t("common.private")} — {t("dash.private")}
           </p>
           <div className="space-y-3">
-            <Field label={t("item.cost")} optional>
-              <Money value={cost} onChange={(e) => setCost(e.target.value)} />
+            <Field label={t("item.cost")} optional hint={t("item.costHint")}>
+              <div className="flex gap-2">
+                <Select
+                  aria-label={t("item.costCurrency")}
+                  className="w-28 shrink-0"
+                  value={currency}
+                  onChange={(e) => changeCurrency(e.target.value as BuyCurrency)}
+                >
+                  {BUY_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CURRENCY_SYMBOL[c]} {c}
+                    </option>
+                  ))}
+                </Select>
+                <div className="min-w-0 flex-1">
+                  <Money
+                    value={cost}
+                    onChange={(e) => setCost(e.target.value)}
+                    symbol={CURRENCY_SYMBOL[currency]}
+                  />
+                </div>
+              </div>
             </Field>
+
+            {/* Only in the way when something was actually converted. */}
+            {currency !== "USD" && (
+              <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white/70 px-3 py-2.5">
+                <label className="min-w-0">
+                  <span className="mb-1 block text-xs font-medium text-amber-800">
+                    {fill(t("item.costRate"), { cur: currency })}
+                  </span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.0001"
+                    min="0"
+                    dir="ltr"
+                    className="w-28"
+                    value={rate}
+                    onChange={(e) => setRate(e.target.value)}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                </label>
+                <p className="pb-2.5 text-sm text-amber-900">
+                  <span className="text-amber-700">= </span>
+                  <span className="font-semibold tabular-nums">{moneyOrDash(costUsd)}</span>
+                </p>
+              </div>
+            )}
 
             {/* Updates as you type, so you can price against a target margin. */}
             <div className="flex items-baseline justify-between rounded-lg bg-white/70 px-3 py-2">
               <span className="text-xs font-medium text-amber-800">{t("item.profit")}</span>
               <span className="text-lg font-semibold tabular-nums text-amber-900">
-                {profitOf(toNumber(price), toNumber(cost))}
+                {profitOf(toNumber(price), costUsd)}
               </span>
             </div>
             <Field label={t("item.note")} optional>
