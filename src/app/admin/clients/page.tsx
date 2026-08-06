@@ -16,6 +16,7 @@ import {
   Input,
   Loading,
   StatusBadge,
+  Textarea,
 } from "@/components/ui";
 
 type ItemRow = Pick<
@@ -43,6 +44,7 @@ export default function ClientsPage() {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -111,9 +113,11 @@ export default function ClientsPage() {
     if (!name.trim()) return;
 
     setBusy(true);
-    const { error } = await supabaseBrowser()
-      .from("clients")
-      .insert({ name: name.trim(), phone: phone.trim() || null });
+    const { error } = await supabaseBrowser().from("clients").insert({
+      name: name.trim(),
+      phone: phone.trim() || null,
+      address: address.trim() || null,
+    });
 
     setBusy(false);
     if (error) {
@@ -123,6 +127,7 @@ export default function ClientsPage() {
 
     setName("");
     setPhone("");
+    setAddress("");
     setAdding(false);
     await load();
   }
@@ -154,6 +159,13 @@ export default function ClientsPage() {
                 placeholder="+961"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+              />
+            </Field>
+            <Field label={t("clients.address")} optional hint={t("clients.addressHint")}>
+              <Textarea
+                rows={2}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
               />
             </Field>
             <Button type="submit" disabled={busy} className="w-full">
