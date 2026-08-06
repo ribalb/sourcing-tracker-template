@@ -93,16 +93,26 @@ export default function RequestsPage() {
       if (!id) {
         const { data, error } = await sb
           .from("clients")
-          .insert({ name: req.name, phone: req.phone, address: req.address })
+          .insert({
+            name: req.name,
+            phone: req.phone,
+            address: req.address,
+            map_url: req.map_url,
+          })
           .select("id")
           .single();
         if (error) throw error;
         id = (data as { id: string }).id;
-      } else if (req.address) {
-        // Fill a blank address, never overwrite one you have already corrected.
+      } else if (req.address || req.map_url) {
+        // Fill what is blank, never overwrite what you have already corrected.
+        // The two move independently: someone may pin a new flat while the
+        // written address on file is still the old one, or the other way round.
         const existing = clients.find((c) => c.id === id);
-        if (existing && !existing.address) {
-          await sb.from("clients").update({ address: req.address }).eq("id", id);
+        const patch: { address?: string; map_url?: string } = {};
+        if (existing && !existing.address && req.address) patch.address = req.address;
+        if (existing && !existing.map_url && req.map_url) patch.map_url = req.map_url;
+        if (Object.keys(patch).length > 0) {
+          await sb.from("clients").update(patch).eq("id", id);
         }
       }
 
@@ -264,6 +274,16 @@ export default function RequestsPage() {
                       <p className="mt-0.5 whitespace-pre-line text-sm text-ink">{req.address}</p>
                     ) : (
                       <p className="mt-0.5 text-sm text-stone-400">{t("req.noAddress")}</p>
+                    )}
+                    {req.map_url && (
+                      <a
+                        href={req.map_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 inline-block text-sm font-medium text-stone-700 underline underline-offset-2"
+                      >
+                        {t("req.openMap")} ↗
+                      </a>
                     )}
                   </div>
 

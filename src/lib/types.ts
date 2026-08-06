@@ -55,6 +55,8 @@ export type Client = {
   phone: string | null;
   /** Where their orders are delivered. Asked once on the request form. */
   address: string | null;
+  /** The pin that goes with it. A map link, never anything else — see lib/maps.ts. */
+  map_url: string | null;
   note: string | null;
   token: string;
   created_at: string;
@@ -144,6 +146,7 @@ export type ClientRequest = {
   name: string;
   phone: string | null;
   address: string | null;
+  map_url: string | null;
   status: RequestStatus;
   client_id: string | null;
   created_at: string;

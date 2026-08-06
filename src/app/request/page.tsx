@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { LangSwitch, useI18n } from "@/lib/i18n";
 import { fill } from "@/lib/format";
 import { photoUrl, uploadPhoto } from "@/lib/photos";
+import { isMapUrl, pinUrl } from "@/lib/maps";
 import { Logo } from "@/components/logo";
 import type { DraftItem } from "@/lib/types";
 import { Button, Card, ErrorNote, Field, Input, Money, Textarea } from "@/components/ui";
@@ -32,8 +33,39 @@ export default function RequestPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [mapUrl, setMapUrl] = useState<string | null>(null);
+  const [paste, setPaste] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [items, setItems] = useState<DraftItem[]>([blankItem()]);
   const [trap, setTrap] = useState(""); // honeypot, see below
+
+  /**
+   * navigator.geolocation, like navigator.clipboard, exists only on https or
+   * localhost — so this button does nothing when the app is opened by IP over
+   * wifi for testing. The pasted link is the way in when that happens.
+   */
+  function locate() {
+    if (!navigator.geolocation) {
+      setMapError(t("req.mapDenied"));
+      return;
+    }
+
+    setLocating(true);
+    setMapError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setMapUrl(pinUrl(pos.coords.latitude, pos.coords.longitude));
+      },
+      () => {
+        setLocating(false);
+        setMapError(t("req.mapDenied"));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }
 
   const [uploading, setUploading] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -71,6 +103,7 @@ export default function RequestPage() {
       p_name: name.trim(),
       p_phone: phone.trim() || null,
       p_address: address.trim() || null,
+      p_map_url: mapUrl,
       p_items: filled.map((it) => ({
         description: it.description.trim(),
         specs: it.specs.trim() || null,
@@ -134,6 +167,58 @@ export default function RequestPage() {
           <Field label={t("req.address")} hint={t("req.addressHint")}>
             <Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
           </Field>
+
+          {/* Not a <Field>: that renders a <label>, and a button inside a label
+              steals its own click to focus the input instead. */}
+          <div className="min-w-0">
+            <p className="mb-1.5 flex items-baseline gap-1.5 text-sm font-medium text-stone-700">
+              {t("req.map")}
+              <span className="text-xs font-normal text-stone-400">({t("common.optional")})</span>
+            </p>
+
+            {mapUrl ? (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-cream-300 bg-cream-50 px-3.5 py-2.5">
+                <span className="min-w-0 text-sm text-ink">✓ {t("req.mapPinned")}</span>
+                <span className="flex shrink-0 items-center gap-1">
+                  <a
+                    href={mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg px-2.5 py-1.5 text-sm text-stone-600 hover:bg-cream-100"
+                  >
+                    {t("req.mapCheck")}
+                  </a>
+                  <Button variant="ghost" onClick={() => setMapUrl(null)}>
+                    {t("req.mapClear")}
+                  </Button>
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Button variant="secondary" disabled={locating} onClick={locate}>
+                  {locating ? t("req.mapLocating") : t("req.mapUse")}
+                </Button>
+                <p className="text-xs text-stone-400">{t("req.mapOr")}</p>
+                <Input
+                  dir="ltr"
+                  inputMode="url"
+                  placeholder="https://maps.app.goo.gl/…"
+                  value={paste}
+                  onChange={(e) => {
+                    setPaste(e.target.value);
+                    setMapError(null);
+                    if (isMapUrl(e.target.value)) setMapUrl(e.target.value.trim());
+                  }}
+                  onBlur={() => {
+                    if (paste.trim() && !isMapUrl(paste)) setMapError(t("req.mapBad"));
+                  }}
+                />
+                {mapError && <p className="text-xs text-red-700">{mapError}</p>}
+              </div>
+            )}
+
+            <p className="mt-1 block text-xs text-stone-400">{t("req.mapHint")}</p>
+          </div>
 
           <hr className="border-cream-200" />
 

@@ -63,6 +63,15 @@ sign-up step means they message the owner instead of self-serving.
   One call writes the request and all its items together, rejects photo paths
   outside `requests/`, and caps the list at ten. Inserting from the browser
   again would walk past every one of those.
+- **The pinned location is a separate column from the written address.**
+  A typed address gets you to the street, the pin to the door, and people
+  already send one on WhatsApp. Mixing them into one field would put a URL
+  into the printed report and the Excel export, where it is unreadable and
+  untappable — so `map_url` is its own column and paper only ever gets the
+  words. `clean_map_url()` accepts Google, Apple and Waze links and silently
+  drops anything else: the owner taps that link from her phone, and it must
+  not be a stranger's URL. `lib/maps.ts` repeats the list for the form's
+  benefit only; the database is what decides.
 - **Duplicate clients are suggested, never merged automatically.** Matching is
   on name or the last 7 digits of the phone (`phoneKey`), because the same
   Lebanese number gets written `+961 71 …` and `71 …`. Two different women with
@@ -75,7 +84,7 @@ sign-up step means they message the owner instead of self-serving.
 
 ## Database
 
-Run `schema.sql` then `002`–`009` in order; all are idempotent. There is no
+Run `schema.sql` then `002`–`011` in order; all are idempotent. There is no
 migration runner — they are pasted into the Supabase SQL editor by hand.
 
 `900_demo_seed.sql` **deletes every row** and inserts invented data. It exists

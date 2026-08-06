@@ -8,6 +8,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { fill, formatDate, money, moneyOrDash, toNumber, waNumber } from "@/lib/format";
 import { copyText } from "@/lib/clipboard";
 import { photoUrl } from "@/lib/photos";
+import { isMapUrl } from "@/lib/maps";
 import { PhotoField } from "@/components/photo-field";
 import {
   BUY_CURRENCIES,
@@ -57,6 +58,7 @@ export default function ClientPage() {
 
   const [editingAddress, setEditingAddress] = useState(false);
   const [addressDraft, setAddressDraft] = useState("");
+  const [mapDraft, setMapDraft] = useState("");
   const [busyAddress, setBusyAddress] = useState(false);
 
   /**
@@ -161,10 +163,13 @@ export default function ClientPage() {
 
     setBusyAddress(true);
     const value = addressDraft.trim() || null;
+    // Silently dropped rather than refused, the same as on the public form:
+    // a link that is not a map is not something to argue with her about.
+    const map = isMapUrl(mapDraft) ? mapDraft.trim() : null;
 
     const { error } = await supabaseBrowser()
       .from("clients")
-      .update({ address: value })
+      .update({ address: value, map_url: map })
       .eq("id", client.id);
 
     setBusyAddress(false);
@@ -173,7 +178,7 @@ export default function ClientPage() {
       return;
     }
 
-    setClient({ ...client, address: value });
+    setClient({ ...client, address: value, map_url: map });
     setEditingAddress(false);
   }
 
@@ -364,6 +369,16 @@ export default function ClientPage() {
               value={addressDraft}
               onChange={(e) => setAddressDraft(e.target.value)}
             />
+            <div>
+              <Input
+                dir="ltr"
+                inputMode="url"
+                placeholder="https://maps.app.goo.gl/…"
+                value={mapDraft}
+                onChange={(e) => setMapDraft(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-stone-400">{t("client.mapPaste")}</p>
+            </div>
             <div className="flex gap-2">
               <Button disabled={busyAddress} onClick={saveAddress}>
                 {busyAddress ? t("common.saving") : t("common.save")}
@@ -375,18 +390,31 @@ export default function ClientPage() {
           </div>
         ) : (
           <div className="mt-2.5 flex items-start justify-between gap-3">
-            <p
-              className={`min-w-0 whitespace-pre-line text-sm ${
-                client.address ? "text-ink" : "text-stone-400"
-              }`}
-            >
-              {client.address || t("client.addressEmpty")}
-            </p>
+            <div className="min-w-0">
+              <p
+                className={`whitespace-pre-line text-sm ${
+                  client.address ? "text-ink" : "text-stone-400"
+                }`}
+              >
+                {client.address || t("client.addressEmpty")}
+              </p>
+              {client.map_url && (
+                <a
+                  href={client.map_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1.5 inline-block text-sm font-medium text-stone-700 underline underline-offset-2"
+                >
+                  {t("req.openMap")} ↗
+                </a>
+              )}
+            </div>
             <Button
               variant="ghost"
               className="shrink-0"
               onClick={() => {
                 setAddressDraft(client.address ?? "");
+                setMapDraft(client.map_url ?? "");
                 setEditingAddress(true);
               }}
             >

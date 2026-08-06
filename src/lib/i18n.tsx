@@ -49,6 +49,19 @@ const DICT = {
     "req.address": "Delivery address",
     "req.addressHint": "Where we should bring the order. Area, street, building, floor.",
 
+    "req.map": "Pin the location",
+    "req.mapHint":
+      "Optional, but it saves a phone call. Tap the button while you're at the address, or paste the location link you'd send on WhatsApp.",
+    "req.mapUse": "Use my current location",
+    "req.mapLocating": "Finding you…",
+    "req.mapPinned": "Location pinned",
+    "req.mapCheck": "Check the pin",
+    "req.mapClear": "Remove",
+    "req.mapOr": "or paste a link",
+    "req.mapDenied":
+      "Your phone didn't share the location. You can paste a map link instead.",
+    "req.mapBad": "That doesn't look like a map link — Google Maps, Apple Maps or Waze.",
+
     "req.itemsTitle": "What you're looking for",
     "req.itemN": "Item {n}",
     "req.addItem": "+ Add another item",
@@ -75,6 +88,7 @@ const DICT = {
     "req.approvedNotify": "Approved. Let them know?",
     "req.reqAddress": "Address",
     "req.noAddress": "No address given",
+    "req.openMap": "Open in Maps",
     "req.itemCount": "{n} items",
     "req.link": "Your request link",
     "req.linkHint":
@@ -207,6 +221,9 @@ const DICT = {
     "client.address": "Delivery address",
     "client.addressHint": "Comes from their request. Edit it here when they move.",
     "client.addressEmpty": "No address yet.",
+    "client.map": "Pinned location",
+    "client.mapEmpty": "No pin.",
+    "client.mapPaste": "Paste a Google Maps, Apple Maps or Waze link.",
 
     "item.add": "Add item",
     "item.new": "New item",
@@ -343,6 +360,18 @@ const DICT = {
     "req.address": "عنوان التسليم",
     "req.addressHint": "المكان الذي يُسلَّم إليه الطلب: المنطقة، الشارع، المبنى، الطابق.",
 
+    "req.map": "تحديد الموقع على الخريطة",
+    "req.mapHint":
+      "اختياري، لكنه يوفّر اتصالاً هاتفياً. يمكن استخدام الزر أثناء التواجد في مكان التسليم، أو لصق رابط الموقع الذي يُرسَل عادةً عبر واتساب.",
+    "req.mapUse": "استخدام موقعي الحالي",
+    "req.mapLocating": "جارٍ تحديد الموقع…",
+    "req.mapPinned": "تم تحديد الموقع",
+    "req.mapCheck": "عرض الموقع",
+    "req.mapClear": "إزالة",
+    "req.mapOr": "أو لصق رابط",
+    "req.mapDenied": "لم يشارك الهاتف الموقع. يمكن لصق رابط خريطة بدلاً من ذلك.",
+    "req.mapBad": "هذا لا يبدو رابط خريطة — خرائط Google أو Apple أو Waze.",
+
     "req.itemsTitle": "ما الذي تبحث عنه",
     "req.itemN": "القطعة {n}",
     "req.addItem": "+ إضافة قطعة أخرى",
@@ -369,6 +398,7 @@ const DICT = {
     "req.approvedNotify": "تمت الموافقة. هل تريدين إبلاغه؟",
     "req.reqAddress": "العنوان",
     "req.noAddress": "لم يُذكر عنوان",
+    "req.openMap": "فتح على الخريطة",
     "req.itemCount": "{n} قطع",
     "req.link": "رابط الطلبات",
     "req.linkHint":
@@ -498,6 +528,9 @@ const DICT = {
     "client.address": "عنوان التسليم",
     "client.addressHint": "يأتي من طلبه. يمكنك تعديله هنا عند تغيّر العنوان.",
     "client.addressEmpty": "لا يوجد عنوان بعد.",
+    "client.map": "الموقع على الخريطة",
+    "client.mapEmpty": "لا يوجد موقع.",
+    "client.mapPaste": "يمكنك لصق رابط خرائط Google أو Apple أو Waze.",
 
     "item.add": "إضافة قطعة",
     "item.new": "قطعة جديدة",

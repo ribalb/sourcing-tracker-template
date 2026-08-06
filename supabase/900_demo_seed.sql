@@ -19,15 +19,15 @@ delete from public.clients;
 -- ------------------------------------------------------------
 -- Clients
 -- ------------------------------------------------------------
-insert into public.clients (id, name, phone, address, note, created_at) values
-  ('11111111-1111-4111-8111-111111111101', 'Maya Khoury',    '+961 71 204 118', E'Achrafieh, Rue Sursock\nImm. Beit Nassar, 4th floor',      'Prefers neutral colours. Always in a hurry.', now() - interval '94 days'),
-  ('11111111-1111-4111-8111-111111111102', 'Lea Chalhoub',   '+961 3 442 907',  E'Hamra, Rue Jeanne d\'Arc\nImm. Zeidan, 2nd floor, left',   'Repeat client, pays on delivery.',            now() - interval '77 days'),
-  ('11111111-1111-4111-8111-111111111103', 'Nour Abou Zeid', '+961 76 615 330', E'Jounieh, Ghadir\nImm. Saade, 3rd floor',                   null,                                          now() - interval '61 days'),
-  ('11111111-1111-4111-8111-111111111104', 'Rita Semaan',    '+961 70 883 214', E'Mar Mikhael, Rue d\'Arménie\nAbove the flower shop',       'Size 38. Sensitive to wool.',                 now() - interval '44 days'),
-  ('11111111-1111-4111-8111-111111111105', 'Yara Fakhoury',  '+961 81 190 655', E'Baabda, Rue Brazilia\nVilla 12',                           null,                                          now() - interval '30 days'),
-  ('11111111-1111-4111-8111-111111111106', 'Dana Mroueh',    '+961 71 771 042', E'Verdun, Rue Rachid Karameh\nImm. Chams, 6th floor',        'Found through Instagram, first order.',        now() - interval '18 days'),
-  ('11111111-1111-4111-8111-111111111107', 'Joelle Rizk',    '+961 3 928 471',  null,                                                        null,                                          now() - interval '9 days'),
-  ('11111111-1111-4111-8111-111111111108', 'Sara Haddad',    '+961 78 336 509', E'Antelias, main road\nImm. Khalil, 1st floor',              'Asked about payment by instalments.',          now() - interval '4 days');
+insert into public.clients (id, name, phone, address, map_url, note, created_at) values
+  ('11111111-1111-4111-8111-111111111101', 'Maya Khoury',    '+961 71 204 118', E'Achrafieh, Rue Sursock\nImm. Beit Nassar, 4th floor',      'https://www.google.com/maps?q=33.888630,35.517700', 'Prefers neutral colours. Always in a hurry.', now() - interval '94 days'),
+  ('11111111-1111-4111-8111-111111111102', 'Lea Chalhoub',   '+961 3 442 907',  E'Hamra, Rue Jeanne d\'Arc\nImm. Zeidan, 2nd floor, left',   'https://www.google.com/maps?q=33.896940,35.480280', 'Repeat client, pays on delivery.',            now() - interval '77 days'),
+  ('11111111-1111-4111-8111-111111111103', 'Nour Abou Zeid', '+961 76 615 330', E'Jounieh, Ghadir\nImm. Saade, 3rd floor',                   null,                                               null,                                          now() - interval '61 days'),
+  ('11111111-1111-4111-8111-111111111104', 'Rita Semaan',    '+961 70 883 214', E'Mar Mikhael, Rue d\'Arménie\nAbove the flower shop',       'https://www.google.com/maps?q=33.894940,35.522430', 'Size 38. Sensitive to wool.',                 now() - interval '44 days'),
+  ('11111111-1111-4111-8111-111111111105', 'Yara Fakhoury',  '+961 81 190 655', E'Baabda, Rue Brazilia\nVilla 12',                           null,                                               null,                                          now() - interval '30 days'),
+  ('11111111-1111-4111-8111-111111111106', 'Dana Mroueh',    '+961 71 771 042', E'Verdun, Rue Rachid Karameh\nImm. Chams, 6th floor',        null,                                               'Found through Instagram, first order.',        now() - interval '18 days'),
+  ('11111111-1111-4111-8111-111111111107', 'Joelle Rizk',    '+961 3 928 471',  null,                                                        null,                                               null,                                          now() - interval '9 days'),
+  ('11111111-1111-4111-8111-111111111108', 'Sara Haddad',    '+961 78 336 509', E'Antelias, main road\nImm. Khalil, 1st floor',              null,                                               'Asked about payment by instalments.',          now() - interval '4 days');
 
 -- ------------------------------------------------------------
 -- Items
@@ -97,11 +97,15 @@ update public.items
 -- Carla asks for one thing; Maya asks for three at once, which is what
 -- the inbox looks like when someone sends a whole list from Instagram.
 -- ------------------------------------------------------------
-insert into public.requests (id, name, phone, address, status, created_at) values
+-- Carla pinned her location on the form; Maya typed the address only, so the
+-- inbox shows one of each.
+insert into public.requests (id, name, phone, address, map_url, status, created_at) values
   ('22222222-2222-4222-8222-222222222201', 'Carla Nassar', '+961 71 448 902',
-   E'Badaro, Rue de l\'Église\nImm. Rizk, 5th floor', 'pending', now() - interval '2 days'),
+   E'Badaro, Rue de l\'Église\nImm. Rizk, 5th floor',
+   'https://www.google.com/maps?q=33.874530,35.516760', 'pending', now() - interval '2 days'),
   ('22222222-2222-4222-8222-222222222202', 'Maya Khoury',  '+961 71 204 118',
-   E'Achrafieh, Rue Sursock\nImm. Beit Nassar, 4th floor', 'pending', now() - interval '6 hours');
+   E'Achrafieh, Rue Sursock\nImm. Beit Nassar, 4th floor',
+   null, 'pending', now() - interval '6 hours');
 
 insert into public.request_items (request_id, position, description, specs, budget) values
   ('22222222-2222-4222-8222-222222222201', 1, 'Black leather shoulder bag, structured, not too big', 'Medium, gold hardware',   320),

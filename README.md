@@ -75,6 +75,7 @@ schema.sql
 008_requests.sql
 009_request_address_and_items.sql
 010_cost_currency.sql
+011_map_location.sql
 ```
 
 All are safe to run twice.
