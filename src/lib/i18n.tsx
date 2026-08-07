@@ -102,6 +102,9 @@ const DICT = {
     "sourcing.noPhoto": "no photo",
     "sourcing.open": "Open",
     "sourcing.undo": "Undo",
+    "sourcing.paid": "What did you pay?",
+    "sourcing.paidHint": "Saved on the item as your cost. Leave it empty to fill in later.",
+    "sourcing.markBought": "Mark bought",
     "sourcing.hint":
       "Everything still Requested or Sourcing, oldest first. Marked items stay until you reload, so a wrong tap can be undone.",
     "nav.logout": "Log out",
@@ -423,6 +426,9 @@ const DICT = {
     "sourcing.noPhoto": "بلا صورة",
     "sourcing.open": "فتح",
     "sourcing.undo": "تراجع",
+    "sourcing.paid": "كم دفعتِ؟",
+    "sourcing.paidHint": "يُحفظ على القطعة كتكلفة عليكِ. اتركيه فارغاً لتضيفيه لاحقاً.",
+    "sourcing.markBought": "تأكيد الشراء",
     "sourcing.hint":
       "كل ما هو «مطلوبة» أو «قيد البحث»، الأقدم أولاً. القطع المؤشّرة تبقى ظاهرة حتى تحديث الصفحة، ليمكن التراجع عن أي ضغطة خاطئة.",
     "nav.logout": "تسجيل الخروج",
