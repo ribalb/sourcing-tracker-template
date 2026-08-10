@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { BRAND } from "@/lib/brand";
-import { formatDate, money } from "@/lib/format";
+import { fill, formatDate, money } from "@/lib/format";
 import { downloadCsv, isoDate, toCsv } from "@/lib/export";
-import { STATUSES, totalsOf, type Item, type Status } from "@/lib/types";
+import { STATUSES, totalsOf, type Item, type Settings, type Status } from "@/lib/types";
 import {
   Button,
   Card,
@@ -88,6 +88,8 @@ export default function DashboardPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [status, setStatus] = useState<Status | "all">("all");
+  /** The service fee from Settings. It is income, so it sits inside billed. */
+  const [feePct, setFeePct] = useState(0);
 
   /**
    * Deliberately not remembered between visits. Whatever was left ticked for
@@ -98,6 +100,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let alive = true;
+
+    supabaseBrowser()
+      .from("settings")
+      .select("service_fee_pct")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (alive && data) {
+          setFeePct(Number((data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0));
+        }
+      });
 
     supabaseBrowser()
       .from("items")
@@ -146,7 +159,7 @@ export default function DashboardPage() {
     [inRange, status],
   );
 
-  const totals = useMemo(() => totalsOf(filtered), [filtered]);
+  const totals = useMemo(() => totalsOf(filtered, feePct), [filtered, feePct]);
 
   const byStatus = useMemo(() => {
     const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
@@ -201,8 +214,12 @@ export default function DashboardPage() {
     });
 
     // Blank line, then the same totals the tiles show, so the file stands alone.
+    // The fee gets a line of its own: the price column above adds up to the
+    // items, and without it the billed total would look like an error.
     const footer = [
       [],
+      [t("dash.itemsTotal"), totals.items],
+      ...(totals.fee > 0 ? [[`${t("dash.fee")} (${feePct}%)`, totals.fee]] : []),
       [t("dash.billed"), totals.billed],
       [t("dash.cost"), totals.cost],
       [t("dash.profit"), totals.profit],
@@ -343,7 +360,15 @@ export default function DashboardPage() {
 
       {/* --------------------------------------------------------- tiles */}
       <div className="grid grid-cols-2 gap-3 print:hidden">
-        <Stat label={t("dash.billed")} value={money(totals.billed)} />
+        <Stat
+          label={t("dash.billed")}
+          value={money(totals.billed)}
+          sub={
+            totals.fee > 0
+              ? fill(t("dash.feeIncl"), { fee: money(totals.fee), pct: String(feePct) })
+              : undefined
+          }
+        />
         <Stat label={t("dash.cost")} value={money(totals.cost)} tone="private" />
         <Stat
           label={t("dash.profit")}
@@ -387,6 +412,7 @@ export default function DashboardPage() {
         rangeLabel={rangeLabel}
         statusLabel={statusLabel}
         totals={totals}
+        feePct={feePct}
         cols={cols}
       />
     </div>
@@ -402,12 +428,14 @@ function PrintableReport({
   rangeLabel,
   statusLabel,
   totals,
+  feePct,
   cols,
 }: {
   rows: Row[];
   rangeLabel: string;
   statusLabel: string;
   totals: ReturnType<typeof totalsOf>;
+  feePct: number;
   cols: ColKey[];
 }) {
   const { t, lang } = useI18n();
@@ -496,6 +524,14 @@ function PrintableReport({
 
       {showsMoney && (
         <div className="mt-5 border-t border-stone-400 pt-3 text-xs">
+          {/* Items, then the fee, then the sum — otherwise the price column
+              above and the total under it appear not to agree. */}
+          {has("price") && totals.fee > 0 && (
+            <>
+              <Total label={t("dash.itemsTotal")} value={money(totals.items)} />
+              <Total label={`${t("dash.fee")} (${feePct}%)`} value={money(totals.fee)} />
+            </>
+          )}
           {has("price") && <Total label={t("dash.billed")} value={money(totals.billed)} />}
           {has("cost") && <Total label={t("dash.cost")} value={money(totals.cost)} />}
           {has("profit") && <Total label={t("dash.profit")} value={money(totals.profit)} strong />}

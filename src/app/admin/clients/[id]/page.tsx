@@ -68,6 +68,9 @@ export default function ClientPage() {
    */
   const [rates, setRates] = useState({ eur: 1.08, sar: 0.2667 });
 
+  /** The service fee percentage from Settings, charged on this client's total. */
+  const [feePct, setFeePct] = useState(0);
+
   const [others, setOthers] = useState<Client[]>([]);
   const [merging, setMerging] = useState(false);
   const [mergeTarget, setMergeTarget] = useState("");
@@ -101,12 +104,13 @@ export default function ClientPage() {
 
     const { data: s } = await sb
       .from("settings")
-      .select("rate_eur,rate_sar")
+      .select("rate_eur,rate_sar,service_fee_pct")
       .eq("id", true)
       .maybeSingle();
     if (s) {
-      const row = s as Pick<Settings, "rate_eur" | "rate_sar">;
+      const row = s as Pick<Settings, "rate_eur" | "rate_sar" | "service_fee_pct">;
       setRates({ eur: Number(row.rate_eur), sar: Number(row.rate_sar) });
+      setFeePct(Number(row.service_fee_pct ?? 0));
     }
 
     setLoading(false);
@@ -116,7 +120,7 @@ export default function ClientPage() {
     load();
   }, [load]);
 
-  const totals = useMemo(() => totalsOf(items), [items]);
+  const totals = useMemo(() => totalsOf(items, feePct), [items, feePct]);
 
   /** Closed orders move out of the working list and into History. */
   const open = useMemo(() => items.filter((i) => !isClosed(i.status)), [items]);
@@ -312,7 +316,15 @@ export default function ClientPage() {
 
       {/* ---------------------------------------------------- money summary */}
       <div className="grid grid-cols-2 gap-3">
-        <Stat label={t("client.billed")} value={money(totals.billed)} />
+        <Stat
+          label={t("client.billed")}
+          value={money(totals.billed)}
+          sub={
+            totals.fee > 0
+              ? fill(t("dash.feeIncl"), { fee: money(totals.fee), pct: String(feePct) })
+              : undefined
+          }
+        />
         <Stat label={t("pub.paid")} value={money(totals.deposits)} />
         <Stat
           label={totals.balance < 0 ? t("client.credit") : t("client.due")}

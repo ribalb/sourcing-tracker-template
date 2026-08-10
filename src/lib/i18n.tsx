@@ -136,6 +136,13 @@ const DICT = {
     "settings.rateSar": "1 riyal in dollars",
     "settings.rateSarHint": "Pegged at 3.75 to the dollar.",
 
+    "settings.fee": "Service fee",
+    "settings.feeHint":
+      "Charged on top of the item prices on every client's page, and included in the amount they are asked to send. Leave it at 0 for no fee.",
+    "settings.feePct": "Percentage of the order",
+    "settings.feePctHint": "10 means 10%. Applies to new and existing orders alike.",
+    "settings.feeExample": "On an order of {items} the client pays {total} — a fee of {fee}.",
+
     "settings.password": "Your password",
     "settings.passwordHint":
       "This is the password for /admin. Only you know it — change it here whenever you like. You stay signed in afterwards.",
@@ -184,11 +191,14 @@ const DICT = {
     "report.colsAll": "Everything",
     "report.colsDelivery": "For the delivery",
     "dash.billed": "Total billed",
+    "dash.itemsTotal": "Items",
+    "dash.fee": "Service fee",
     "dash.cost": "Total cost",
     "dash.profit": "Profit",
     "dash.deposits": "Deposits collected",
     "dash.balance": "Balance outstanding",
     "dash.items": "Items",
+    "dash.feeIncl": "includes {fee} service fee ({pct}%)",
     "dash.byStatus": "By status",
     "dash.private": "Only you can see cost and profit.",
 
@@ -309,6 +319,8 @@ const DICT = {
     "pub.title": "Your order",
     "pub.hello": "Hello",
     "pub.total": "Total",
+    "pub.fee": "Service fee ({pct}%)",
+    "pub.feeIncluded": "Includes {fee} service fee",
     "pub.paid": "Paid",
     "pub.due": "Balance due",
     "pub.empty": "Nothing here yet — your requests will show up as they come in.",
@@ -460,6 +472,13 @@ const DICT = {
     "settings.rateSar": "قيمة الريال بالدولار",
     "settings.rateSarHint": "مثبّت على 3.75 للدولار.",
 
+    "settings.fee": "رسوم الخدمة",
+    "settings.feeHint":
+      "تُضاف فوق أسعار القطع في صفحة كل زبون، وتدخل ضمن المبلغ المطلوب منه. اتركيها 0 إذا لم تكوني تتقاضين رسوماً.",
+    "settings.feePct": "نسبة من قيمة الطلب",
+    "settings.feePctHint": "10 تعني 10٪. تنطبق على الطلبات الجديدة والقديمة معاً.",
+    "settings.feeExample": "على طلب بقيمة {items} يدفع الزبون {total} — أي رسوم {fee}.",
+
     "settings.password": "كلمة السر",
     "settings.passwordHint":
       "كلمة سر الدخول إلى /admin. أنتِ وحدك تعرفينها، ويمكنك تغييرها هنا متى شئتِ. يبقى الدخول قائماً بعد التغيير.",
@@ -508,11 +527,14 @@ const DICT = {
     "report.colsAll": "كل الأعمدة",
     "report.colsDelivery": "نسخة التوصيل",
     "dash.billed": "إجمالي المبيعات",
+    "dash.itemsTotal": "القطع",
+    "dash.fee": "رسوم الخدمة",
     "dash.cost": "إجمالي التكلفة",
     "dash.profit": "الربح",
     "dash.deposits": "العرابين المقبوضة",
     "dash.balance": "المبلغ المتبقي",
     "dash.items": "القطع",
+    "dash.feeIncl": "تشمل {fee} رسوم خدمة ({pct}٪)",
     "dash.byStatus": "حسب الحالة",
     "dash.private": "التكلفة والربح تظهر لكِ وحدك.",
 
@@ -628,6 +650,8 @@ const DICT = {
     "pub.title": "طلبك",
     "pub.hello": "مرحباً",
     "pub.total": "الإجمالي",
+    "pub.fee": "رسوم الخدمة ({pct}٪)",
+    "pub.feeIncluded": "يشمل {fee} رسوم خدمة",
     "pub.paid": "المدفوع",
     "pub.due": "المتبقي",
     "pub.empty": "لا يوجد شيء بعد — ستظهر طلباتك هنا أولاً بأول.",

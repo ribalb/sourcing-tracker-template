@@ -30,10 +30,13 @@ export function Card({
 export function Stat({
   label,
   value,
+  sub,
   tone = "plain",
 }: {
   label: string;
   value: string;
+  /** A small line under the figure, for what the figure is made of. */
+  sub?: string;
   tone?: "plain" | "good" | "warn" | "private";
 }) {
   const tones = {
@@ -50,6 +53,7 @@ export function Stat({
         {tone === "private" && <LockIcon />}
       </div>
       <div className={`mt-1 text-2xl font-semibold tabular-nums ${tones[tone]}`}>{value}</div>
+      {sub && <p className="mt-0.5 text-[11px] leading-snug text-stone-400">{sub}</p>}
     </div>
   );
 }

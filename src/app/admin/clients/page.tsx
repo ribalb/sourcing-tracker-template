@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { money, moneyOrDash } from "@/lib/format";
 import { photoUrl } from "@/lib/photos";
-import { totalsOf, type Client, type Item } from "@/lib/types";
+import { totalsOf, type Client, type Item, type Settings } from "@/lib/types";
 import {
   Button,
   Card,
@@ -40,6 +40,8 @@ export default function ClientsPage() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  /** The service fee, so the figure here matches the client's own page. */
+  const [feePct, setFeePct] = useState(0);
 
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -49,7 +51,7 @@ export default function ClientsPage() {
 
   async function load() {
     const sb = supabaseBrowser();
-    const [c, i] = await Promise.all([
+    const [c, i, s] = await Promise.all([
       sb.from("clients").select("*").order("created_at", { ascending: false }),
       sb
         .from("items")
@@ -57,6 +59,7 @@ export default function ClientsPage() {
           "id,client_id,description,specs,status,price,cost,deposit,request_photo,found_photo",
         )
         .order("created_at", { ascending: false }),
+      sb.from("settings").select("service_fee_pct").eq("id", true).maybeSingle(),
     ]);
 
     if (c.error || i.error) {
@@ -65,6 +68,7 @@ export default function ClientsPage() {
     }
     setClients((c.data ?? []) as Client[]);
     setItems((i.data ?? []) as ItemRow[]);
+    if (s.data) setFeePct(Number((s.data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0));
   }
 
   useEffect(() => {
@@ -196,7 +200,7 @@ export default function ClientsPage() {
           {visibleClients.length > 0 && (
             <ul className="space-y-2.5">
               {visibleClients.map((c) => {
-                const totals = totalsOf(byClient.get(c.id) ?? []);
+                const totals = totalsOf(byClient.get(c.id) ?? [], feePct);
                 return (
                   <li key={c.id}>
                     <Link

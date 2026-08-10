@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { copyText } from "@/lib/clipboard";
-import { money, waNumber } from "@/lib/format";
+import { fill, money, waNumber } from "@/lib/format";
 import type { PaymentInfo } from "@/lib/types";
 
 /**
@@ -16,10 +16,16 @@ export function PaySection({
   payment,
   due,
   clientName,
+  fee = 0,
+  feePct = 0,
 }: {
   payment: PaymentInfo | null;
+  /** Already includes the service fee — this is the figure they must send. */
   due: number;
   clientName: string;
+  /** The service fee inside `due`, spelled out so the amount is not a surprise. */
+  fee?: number;
+  feePct?: number;
 }) {
   const { t, lang } = useI18n();
 
@@ -69,7 +75,12 @@ export function PaySection({
           />
         )}
         {/* Copies the bare number, so it pastes straight into a payment app. */}
-        <Line label={t("pub.amountToSend")} value={money(due)} copyValue={String(due)} />
+        <Line
+          label={t("pub.amountToSend")}
+          value={money(due)}
+          copyValue={String(due)}
+          sub={fee > 0 ? fill(t("pub.feeIncluded"), { fee: money(fee), pct: String(feePct) }) : undefined}
+        />
       </div>
 
       {owner && (

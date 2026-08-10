@@ -113,6 +113,12 @@ export type PaymentInfo = {
 export type PublicView = {
   client: { name: string };
   payment: PaymentInfo | null;
+  /**
+   * The service fee, as a percentage — 10 means 10%. Comes from the database
+   * function, not the settings table, which anon cannot read. Older rows and
+   * a database still on 011 send nothing, which reads as no fee.
+   */
+  fee_pct?: number | null;
   items: PublicItem[];
 };
 
@@ -172,10 +178,29 @@ export type Settings = {
   /** Dollars per one euro / one riyal. What the item form starts from. */
   rate_eur: number;
   rate_sar: number;
+  /** The service fee charged on top of every order, as a percentage. */
+  service_fee_pct: number;
   updated_at: string;
 };
 
+/**
+ * The service fee in dollars, from a total and a percentage.
+ *
+ * Rounded to the cent here and nowhere else, so the figure the client is
+ * shown is the figure that is added up — a fee left at $50.0004 would print
+ * as $50 on the page and as something else in the export.
+ */
+export function feeOn(subtotal: number, pct: number | null | undefined): number {
+  if (!pct || subtotal <= 0) return 0;
+  return Math.round(subtotal * pct) / 100;
+}
+
 export type Totals = {
+  /** The item prices alone, before the service fee. */
+  items: number;
+  /** The service fee in dollars. Zero when no fee is set. */
+  fee: number;
+  /** What the client owes in all: items plus fee. */
   billed: number;
   cost: number;
   profit: number;
@@ -184,8 +209,17 @@ export type Totals = {
   count: number;
 };
 
-export function totalsOf(items: Pick<Item, "status" | "price" | "cost" | "deposit">[]): Totals {
-  let billed = 0;
+/**
+ * `feePct` is the percentage from Settings — 10 for 10%. The fee is charged
+ * on the items that are actually billed, so cancelling an item removes its
+ * share of it too. It counts as income: it is inside `billed`, and therefore
+ * inside `profit` and `balance`.
+ */
+export function totalsOf(
+  items: Pick<Item, "status" | "price" | "cost" | "deposit">[],
+  feePct: number | null | undefined = 0,
+): Totals {
+  let priced = 0;
   let cost = 0;
   let deposits = 0;
 
@@ -197,11 +231,16 @@ export function totalsOf(items: Pick<Item, "status" | "price" | "cost" | "deposi
 
     // Canceled items are never charged, and their cost never happened.
     if (!isBillable(it.status)) continue;
-    billed += it.price ?? 0;
+    priced += it.price ?? 0;
     cost += it.cost ?? 0;
   }
 
+  const fee = feeOn(priced, feePct);
+  const billed = priced + fee;
+
   return {
+    items: priced,
+    fee,
     billed,
     cost,
     profit: billed - cost,

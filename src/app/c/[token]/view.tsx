@@ -1,8 +1,8 @@
 "use client";
 
 import { LangSwitch, useI18n } from "@/lib/i18n";
-import { formatDate, money } from "@/lib/format";
-import { isBillable, type PublicItem, type PublicView } from "@/lib/types";
+import { fill, formatDate, money } from "@/lib/format";
+import { feeOn, isBillable, type PublicItem, type PublicView } from "@/lib/types";
 import { photoUrl } from "@/lib/photos";
 import { Logo } from "@/components/logo";
 import { PaySection } from "@/components/pay-section";
@@ -30,7 +30,13 @@ export default function ClientView({ view }: { view: PublicView | null }) {
     if (!isBillable(it.status)) continue;
     total += it.price ?? 0;
   }
-  const due = total - paid;
+
+  // The percentage the owner set in Settings, charged on the items total.
+  // Shown as its own line rather than folded into the prices: what each
+  // piece cost stays the number they were quoted.
+  const feePct = Number(view.fee_pct ?? 0);
+  const fee = feeOn(total, feePct);
+  const due = total + fee - paid;
 
   return (
     <main className="mx-auto max-w-md px-4 pb-16 pt-6">
@@ -50,6 +56,14 @@ export default function ClientView({ view }: { view: PublicView | null }) {
           <span className="text-sm text-cream-100/50">{t("pub.total")}</span>
           <span className="text-lg font-semibold tabular-nums">{money(total)}</span>
         </div>
+        {fee > 0 && (
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-sm text-cream-100/50">
+              {fill(t("pub.fee"), { pct: String(feePct) })}
+            </span>
+            <span className="tabular-nums text-cream-100/90">{money(fee)}</span>
+          </div>
+        )}
         <div className="mt-2 flex items-baseline justify-between">
           <span className="text-sm text-cream-100/50">{t("pub.paid")}</span>
           <span className="tabular-nums text-cream-100/90">{money(paid)}</span>
@@ -131,7 +145,13 @@ export default function ClientView({ view }: { view: PublicView | null }) {
       )}
 
       {/* Payment comes last: the client reads what they got, then how to pay. */}
-      <PaySection payment={view.payment} due={due} clientName={view.client.name} />
+      <PaySection
+        payment={view.payment}
+        due={due}
+        fee={fee}
+        feePct={feePct}
+        clientName={view.client.name}
+      />
     </main>
   );
 }

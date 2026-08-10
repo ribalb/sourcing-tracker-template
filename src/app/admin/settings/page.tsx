@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { copyText } from "@/lib/clipboard";
-import { toNumber } from "@/lib/format";
-import type { Settings } from "@/lib/types";
+import { fill, money, toNumber } from "@/lib/format";
+import { feeOn, type Settings } from "@/lib/types";
 import { PaySection } from "@/components/pay-section";
 import { Button, Card, ErrorNote, Field, Input, Loading, Textarea } from "@/components/ui";
+
+/** The order the fee example and the preview below it are worked out on. */
+const SAMPLE_ORDER = 200;
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -29,12 +32,19 @@ export default function SettingsPage() {
   const [rateEur, setRateEur] = useState("1.08");
   const [rateSar, setRateSar] = useState("0.2667");
 
+  /** Percent, not a fraction: "10" is 10%. Zero means no fee anywhere. */
+  const [feePct, setFeePct] = useState("0");
+
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwDone, setPwDone] = useState(false);
+
+  /** Typed text, kept inside the range the database will accept. */
+  const feeNumber = Math.min(100, Math.max(0, toNumber(feePct) ?? 0));
+  const previewFee = feeOn(SAMPLE_ORDER, feeNumber);
 
   const requestUrl = `${
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -66,6 +76,7 @@ export default function SettingsPage() {
           setWhatsapp(s.owner_whatsapp ?? "");
           setRateEur(String(s.rate_eur ?? "1.08"));
           setRateSar(String(s.rate_sar ?? "0.2667"));
+          setFeePct(String(s.service_fee_pct ?? "0"));
         }
         setLoaded(true);
       });
@@ -143,6 +154,9 @@ export default function SettingsPage() {
         owner_whatsapp: whatsapp.trim() || null,
         rate_eur: toNumber(rateEur) ?? 1.08,
         rate_sar: toNumber(rateSar) ?? 0.2667,
+        // Clamped to the same range the database check allows, so a stray
+        // "1000" comes back as a plain error you can read, not a rejection.
+        service_fee_pct: Math.min(100, Math.max(0, toNumber(feePct) ?? 0)),
       })
       .eq("id", true);
 
@@ -268,6 +282,42 @@ export default function SettingsPage() {
 
           <hr className="border-cream-200" />
 
+          {/* ------------------------------------------------ service fee */}
+          <div>
+            <h2 className="text-sm font-semibold text-stone-700">{t("settings.fee")}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">{t("settings.feeHint")}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t("settings.feePct")} hint={t("settings.feePctHint")}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
+                max="100"
+                dir="ltr"
+                value={feePct}
+                onChange={(e) => setFeePct(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </Field>
+          </div>
+
+          {/* Worked on a round number, because a percentage on its own is
+              easy to mistype by a factor of ten and hard to notice. */}
+          {feeNumber > 0 && (
+            <p className="rounded-lg bg-cream-50 px-3 py-2 text-xs leading-relaxed text-stone-600">
+              {fill(t("settings.feeExample"), {
+                items: money(SAMPLE_ORDER),
+                total: money(SAMPLE_ORDER + feeOn(SAMPLE_ORDER, feeNumber)),
+                fee: money(feeOn(SAMPLE_ORDER, feeNumber)),
+              })}
+            </p>
+          )}
+
+          <hr className="border-cream-200" />
+
           <Field label={t("settings.en")} hint={t("settings.bold")} optional>
             <Textarea
               dir="ltr"
@@ -303,7 +353,9 @@ export default function SettingsPage() {
       <div>
         <p className="mb-2 px-1 text-xs font-medium text-stone-500">{t("settings.preview")}</p>
         <PaySection
-          due={105}
+          due={SAMPLE_ORDER + previewFee}
+          fee={previewFee}
+          feePct={feeNumber}
           clientName="Rana"
           payment={{
             en: en.trim() || null,

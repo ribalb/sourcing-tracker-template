@@ -72,6 +72,15 @@ sign-up step means they message the owner instead of self-serving.
   drops anything else: the owner taps that link from her phone, and it must
   not be a stranger's URL. `lib/maps.ts` repeats the list for the form's
   benefit only; the database is what decides.
+- **The service fee is one percentage in Settings, stored nowhere else.** It is
+  charged on the items total of every client page, shown as its own line, and
+  folded into the amount to send. It is income, so it sits inside `billed` and
+  therefore inside profit, the dashboard and the export — which is why the
+  export and the printed report list items and fee separately, or the price
+  column would not add up to the total under it. Nothing is copied onto the
+  item at save time, unlike a buying rate: changing the percentage does change
+  what an old, unpaid order comes to. If a client ever needs their own rate,
+  that is a column on `clients`, not a rewrite of this.
 - **Duplicate clients are suggested, never merged automatically.** Matching is
   on name or the last 7 digits of the phone (`phoneKey`), because the same
   Lebanese number gets written `+961 71 …` and `71 …`. Two different women with
@@ -84,7 +93,7 @@ sign-up step means they message the owner instead of self-serving.
 
 ## Database
 
-Run `schema.sql` then `002`–`011` in order; all are idempotent. There is no
+Run `schema.sql` then `002`–`012` in order; all are idempotent. There is no
 migration runner — they are pasted into the Supabase SQL editor by hand.
 
 `900_demo_seed.sql` **deletes every row** and inserts invented data. It exists
