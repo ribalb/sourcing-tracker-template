@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n, LangSwitch } from "@/lib/i18n";
@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState(false);
+  /** Set by the client when a request came back 401 and the session was dropped. */
+  const [expired, setExpired] = useState(false);
+
+  // Read from the address rather than useSearchParams: that hook forces this
+  // page behind a Suspense boundary at build time for one optional flag.
+  useEffect(() => {
+    setExpired(new URLSearchParams(window.location.search).has("expired"));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,6 +52,12 @@ export default function LoginPage() {
         <p className="mt-5 text-sm text-stone-500">{t("login.subtitle")}</p>
         <LangSwitch className="mt-4" />
       </div>
+
+      {expired && !error && (
+        <p className="mb-4 rounded-xl border border-cream-300 bg-cream-50 px-3.5 py-2.5 text-sm text-stone-600">
+          {t("login.expired")}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label={t("login.email")}>

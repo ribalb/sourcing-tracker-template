@@ -164,6 +164,7 @@ const DICT = {
     "login.submit": "Sign in",
     "login.working": "Signing in…",
     "login.failed": "Wrong email or password.",
+    "login.expired": "Your session ended. Sign in again.",
     "login.hint":
       "In Supabase: Authentication → Users → Add user → Create new user, with “Auto Confirm User” ticked.",
 
@@ -501,6 +502,7 @@ const DICT = {
     "login.submit": "دخول",
     "login.working": "جارٍ الدخول…",
     "login.failed": "البريد الإلكتروني أو كلمة السر غير صحيحة.",
+    "login.expired": "انتهت الجلسة. سجّلي الدخول من جديد.",
     "login.hint":
       "في Supabase: Authentication ← Users ← Add user ← Create new user، مع تفعيل «Auto Confirm User».",
 
