@@ -338,6 +338,8 @@ const DICT = {
     "pub.iPaid": "I've sent the payment",
     "pub.settled": "Paid in full",
     "pub.credit": "In your credit",
+    "pub.step": "Step {n} of {of}",
+    "pub.next": "Next: {step}",
     "pub.photoFound": "What we found",
     "pub.photoRequest": "Your reference",
 
@@ -670,6 +672,8 @@ const DICT = {
     "pub.iPaid": "لقد أرسلت المبلغ",
     "pub.settled": "مدفوع بالكامل",
     "pub.credit": "رصيد لكِ",
+    "pub.step": "الخطوة {n} من {of}",
+    "pub.next": "التالي: {step}",
     "pub.photoFound": "ما وجدناه",
     "pub.photoRequest": "صورتك المرجعية",
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { LangSwitch, useI18n } from "@/lib/i18n";
+import { Fragment } from "react";
+
+import { LangSwitch, useI18n, type TKey } from "@/lib/i18n";
 import { fill, formatDate, money } from "@/lib/format";
-import { feeOn, isBillable, type PublicItem, type PublicView } from "@/lib/types";
+import { feeOn, isBillable, type PublicItem, type PublicView, type Status } from "@/lib/types";
 import { photoUrl } from "@/lib/photos";
 import { Logo } from "@/components/logo";
 import { PaySection } from "@/components/pay-section";
@@ -109,6 +111,8 @@ export default function ClientView({ view }: { view: PublicView | null }) {
                   <StatusBadge status={item.status} />
                 </div>
 
+                <StatusTrail status={item.status} />
+
                 <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-stone-100 pt-3 text-sm">
                   {item.budget !== null && item.price === null && (
                     <span className="text-stone-500">
@@ -153,6 +157,86 @@ export default function ClientView({ view }: { view: PublicView | null }) {
         clientName={view.client.name}
       />
     </main>
+  );
+}
+
+/**
+ * The road an item walks, in order, as the client sees it.
+ *
+ * `closed` is not on it: the database keeps it off this page entirely. Neither
+ * is `canceled` — it is not a later stage of anything, it is stepping off the
+ * road, so a canceled item shows no trail at all and the badge says why.
+ */
+const TRAIL = [
+  "requested",
+  "sourcing",
+  "found",
+  "bought",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+] as const satisfies readonly Status[];
+
+/**
+ * Where the item is along that road.
+ *
+ * The badge above already names today's stage; this says how much of the way
+ * that is, which is the actual question behind "where is my order?". Seven
+ * words will not fit across a phone, so the stages are dots and only the next
+ * one is spelled out — the one thing they are waiting for.
+ *
+ * Laid out with plain flex rows, so Arabic runs the trail right to left with
+ * no work: `dir` on the document already reverses them.
+ */
+function StatusTrail({ status }: { status: Status }) {
+  const { t } = useI18n();
+
+  const at = TRAIL.indexOf(status as (typeof TRAIL)[number]);
+  if (at < 0) return null;
+
+  const next = TRAIL[at + 1];
+
+  return (
+    <div className="mt-3.5">
+      <ol
+        className="flex items-center"
+        aria-label={fill(t("pub.step"), { n: String(at + 1), of: String(TRAIL.length) })}
+      >
+        {TRAIL.map((s, i) => {
+          const done = i <= at;
+          return (
+            <Fragment key={s}>
+              {i > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={`h-px flex-1 ${done ? "bg-ink" : "bg-cream-300"}`}
+                />
+              )}
+              <li
+                title={t(`status.${s}` as TKey)}
+                aria-current={i === at ? "step" : undefined}
+                className={`shrink-0 rounded-full transition ${
+                  i === at
+                    ? "h-2.5 w-2.5 bg-ink ring-4 ring-ink/10"
+                    : `h-1.5 w-1.5 ${done ? "bg-ink" : "bg-cream-300"}`
+                }`}
+              >
+                <span className="sr-only">{t(`status.${s}` as TKey)}</span>
+              </li>
+            </Fragment>
+          );
+        })}
+      </ol>
+
+      <div className="mt-2 flex items-baseline justify-between gap-2 text-[11px] text-stone-400">
+        <span>{fill(t("pub.step"), { n: String(at + 1), of: String(TRAIL.length) })}</span>
+        {next && (
+          <span className="truncate">
+            {fill(t("pub.next"), { step: t(`status.${next}` as TKey) })}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
