@@ -6,7 +6,16 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { BRAND } from "@/lib/brand";
 import { fill, formatDate, money } from "@/lib/format";
 import { downloadCsv, isoDate, toCsv } from "@/lib/export";
-import { STATUSES, totalsOf, type Item, type Settings, type Status } from "@/lib/types";
+import {
+  STATUSES,
+  feeLabel,
+  feePctOf,
+  totalsAcross,
+  type Item,
+  type Settings,
+  type Status,
+  type Totals,
+} from "@/lib/types";
 import {
   Button,
   Card,
@@ -21,10 +30,24 @@ import {
 
 type Row = Pick<
   Item,
-  "id" | "description" | "specs" | "budget" | "status" | "price" | "cost" | "deposit" | "created_at"
-> & { client: string; address: string | null };
+  | "id"
+  | "client_id"
+  | "description"
+  | "specs"
+  | "budget"
+  | "status"
+  | "price"
+  | "cost"
+  | "deposit"
+  | "created_at"
+> & {
+  client: string;
+  address: string | null;
+  /** This client's own fee percentage, or null to follow Settings. */
+  clientFee: number | null;
+};
 
-type ClientRel = { name?: string; address?: string | null };
+type ClientRel = { name?: string; address?: string | null; service_fee_pct?: number | null };
 
 /** Supabase returns a to-one relation as an object, but older versions used an array. */
 function clientOf(raw: unknown): ClientRel {
@@ -88,8 +111,11 @@ export default function DashboardPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [status, setStatus] = useState<Status | "all">("all");
-  /** The service fee from Settings. It is income, so it sits inside billed. */
-  const [feePct, setFeePct] = useState(0);
+  /**
+   * The service fee from Settings, charged to every client who has not been
+   * given a rate of their own. It is income, so it sits inside billed.
+   */
+  const [defaultFeePct, setDefaultFeePct] = useState(0);
 
   /**
    * Deliberately not remembered between visits. Whatever was left ticked for
@@ -108,14 +134,16 @@ export default function DashboardPage() {
       .maybeSingle()
       .then(({ data }) => {
         if (alive && data) {
-          setFeePct(Number((data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0));
+          setDefaultFeePct(
+            Number((data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0),
+          );
         }
       });
 
     supabaseBrowser()
       .from("items")
       .select(
-        "id,description,specs,budget,status,price,cost,deposit,created_at,clients(name,address)",
+        "id,client_id,description,specs,budget,status,price,cost,deposit,created_at,clients(name,address,service_fee_pct)",
       )
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -131,6 +159,7 @@ export default function DashboardPage() {
               ...(r as unknown as Row),
               client: c.name ?? "",
               address: c.address ?? null,
+              clientFee: c.service_fee_pct ?? null,
             };
           }),
         );
@@ -159,7 +188,27 @@ export default function DashboardPage() {
     [inRange, status],
   );
 
-  const totals = useMemo(() => totalsOf(filtered, feePct), [filtered, feePct]);
+  /**
+   * Each client's own rate, taken off the rows themselves — every item
+   * carries its client's, so nothing extra has to be fetched.
+   */
+  const ownFee = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const r of rows ?? []) map.set(r.client_id, r.clientFee);
+    return map;
+  }, [rows]);
+
+  /* Worked out per client and added up, because two clients may be on
+     different percentages — see totalsAcross(). */
+  const totals = useMemo(
+    () =>
+      totalsAcross(
+        filtered,
+        (r) => r.client_id,
+        (id) => feePctOf({ service_fee_pct: ownFee.get(id) ?? null }, defaultFeePct),
+      ),
+    [filtered, ownFee, defaultFeePct],
+  );
 
   const byStatus = useMemo(() => {
     const counts = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<Status, number>;
@@ -219,7 +268,7 @@ export default function DashboardPage() {
     const footer = [
       [],
       [t("dash.itemsTotal"), totals.items],
-      ...(totals.fee > 0 ? [[`${t("dash.fee")} (${feePct}%)`, totals.fee]] : []),
+      ...(totals.fee > 0 ? [[feeLabel(t("dash.fee"), totals.feePcts), totals.fee]] : []),
       [t("dash.billed"), totals.billed],
       [t("dash.cost"), totals.cost],
       [t("dash.profit"), totals.profit],
@@ -365,7 +414,12 @@ export default function DashboardPage() {
           value={money(totals.billed)}
           sub={
             totals.fee > 0
-              ? fill(t("dash.feeIncl"), { fee: money(totals.fee), pct: String(feePct) })
+              ? fill(
+                  /* One percentage over clients on different rates would
+                     read as the rate this figure was worked out at. */
+                  t(totals.feePcts.length === 1 ? "dash.feeIncl" : "dash.feeInclMixed"),
+                  { fee: money(totals.fee), pct: String(totals.feePcts[0]) },
+                )
               : undefined
           }
         />
@@ -412,7 +466,6 @@ export default function DashboardPage() {
         rangeLabel={rangeLabel}
         statusLabel={statusLabel}
         totals={totals}
-        feePct={feePct}
         cols={cols}
       />
     </div>
@@ -428,14 +481,12 @@ function PrintableReport({
   rangeLabel,
   statusLabel,
   totals,
-  feePct,
   cols,
 }: {
   rows: Row[];
   rangeLabel: string;
   statusLabel: string;
-  totals: ReturnType<typeof totalsOf>;
-  feePct: number;
+  totals: Totals;
   cols: ColKey[];
 }) {
   const { t, lang } = useI18n();
@@ -529,7 +580,10 @@ function PrintableReport({
           {has("price") && totals.fee > 0 && (
             <>
               <Total label={t("dash.itemsTotal")} value={money(totals.items)} />
-              <Total label={`${t("dash.fee")} (${feePct}%)`} value={money(totals.fee)} />
+              <Total
+                label={feeLabel(t("dash.fee"), totals.feePcts)}
+                value={money(totals.fee)}
+              />
             </>
           )}
           {has("price") && <Total label={t("dash.billed")} value={money(totals.billed)} />}

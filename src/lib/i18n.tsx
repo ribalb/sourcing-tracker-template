@@ -140,7 +140,8 @@ const DICT = {
     "settings.feeHint":
       "Charged on top of the item prices on every client's page, and included in the amount they are asked to send. Leave it at 0 for no fee.",
     "settings.feePct": "Percentage of the order",
-    "settings.feePctHint": "10 means 10%. Applies to new and existing orders alike.",
+    "settings.feePctHint":
+      "10 means 10%. Applies to new and existing orders alike, and to every client who has not been given their own rate on their page.",
     "settings.feeExample": "On an order of {items} the client pays {total} — a fee of {fee}.",
 
     "settings.password": "Your password",
@@ -200,6 +201,9 @@ const DICT = {
     "dash.balance": "Balance outstanding",
     "dash.items": "Items",
     "dash.feeIncl": "includes {fee} service fee ({pct}%)",
+    /* Several clients on different rates: one percentage here would read as
+       the rate the whole figure was worked out at, and it would not be. */
+    "dash.feeInclMixed": "includes {fee} service fee",
     "dash.byStatus": "By status",
     "dash.private": "Only you can see cost and profit.",
 
@@ -248,6 +252,15 @@ const DICT = {
     "client.map": "Pinned location",
     "client.mapEmpty": "No pin.",
     "client.mapPaste": "Paste a Google Maps, Apple Maps or Waze link.",
+
+    "client.fee": "Service fee",
+    "client.feeHint":
+      "What this client is charged on top of their items. Everyone follows Settings until you give someone a rate of their own.",
+    "client.feeDefault": "the rate from Settings",
+    "client.feeOwn": "set for this client alone",
+    "client.feePct": "Percentage for this client",
+    "client.feePctHint": "Leave it empty to follow Settings. 0 means this client pays no fee.",
+    "client.feeUseDefault": "Follow Settings again",
 
     "item.add": "Add item",
     "item.new": "New item",
@@ -479,7 +492,8 @@ const DICT = {
     "settings.feeHint":
       "تُضاف فوق أسعار القطع في صفحة كل زبون، وتدخل ضمن المبلغ المطلوب منه. اتركيها 0 إذا لم تكوني تتقاضين رسوماً.",
     "settings.feePct": "نسبة من قيمة الطلب",
-    "settings.feePctHint": "10 تعني 10٪. تنطبق على الطلبات الجديدة والقديمة معاً.",
+    "settings.feePctHint":
+      "10 تعني 10٪. تنطبق على الطلبات الجديدة والقديمة معاً، وعلى كل زبون لم تحدّدي له نسبة خاصة في صفحته.",
     "settings.feeExample": "على طلب بقيمة {items} يدفع الزبون {total} — أي رسوم {fee}.",
 
     "settings.password": "كلمة السر",
@@ -539,6 +553,7 @@ const DICT = {
     "dash.balance": "المبلغ المتبقي",
     "dash.items": "القطع",
     "dash.feeIncl": "تشمل {fee} رسوم خدمة ({pct}٪)",
+    "dash.feeInclMixed": "تشمل {fee} رسوم خدمة",
     "dash.byStatus": "حسب الحالة",
     "dash.private": "التكلفة والربح تظهر لكِ وحدك.",
 
@@ -584,6 +599,15 @@ const DICT = {
     "client.map": "الموقع على الخريطة",
     "client.mapEmpty": "لا يوجد موقع.",
     "client.mapPaste": "يمكنك لصق رابط خرائط Google أو Apple أو Waze.",
+
+    "client.fee": "رسوم الخدمة",
+    "client.feeHint":
+      "ما يُضاف فوق قطع هذا الزبون. الجميع يتبع الإعدادات إلى أن تحدّدي نسبة خاصة لأحدهم.",
+    "client.feeDefault": "النسبة من الإعدادات",
+    "client.feeOwn": "خاصة بهذا الزبون وحده",
+    "client.feePct": "النسبة لهذا الزبون",
+    "client.feePctHint": "اتركيها فارغة ليتبع الإعدادات. 0 تعني أنه لا يدفع رسوماً.",
+    "client.feeUseDefault": "العودة إلى الإعدادات",
 
     "item.add": "إضافة قطعة",
     "item.new": "قطعة جديدة",

@@ -79,8 +79,19 @@ sign-up step means they message the owner instead of self-serving.
   export and the printed report list items and fee separately, or the price
   column would not add up to the total under it. Nothing is copied onto the
   item at save time, unlike a buying rate: changing the percentage does change
-  what an old, unpaid order comes to. If a client ever needs their own rate,
-  that is a column on `clients`, not a rewrite of this.
+  what an old, unpaid order comes to.
+- **One client can be charged their own percentage.** `clients.service_fee_pct`
+  is null for everybody by default, which means "follow Settings"; a number
+  there overrides it for that client alone. Null and 0 are different answers —
+  0 means this client pays no fee while everyone else still does — so the field
+  is nullable and the empty box saves null. It resolves inside
+  `get_client_by_token()`, so the client page receives one number and never
+  learns where it came from. Anything totalling more than one client (the
+  dashboard, the export, the printed report) must work the fee out per client
+  and add up — `totalsAcross()` in `lib/types.ts` — because one blended rate
+  over mixed clients is wrong in a way that still looks plausible. For the same
+  reason those screens print "(10%)" beside the fee only while a single rate is
+  in play; see `feeLabel()`.
 - **Duplicate clients are suggested, never merged automatically.** Matching is
   on name or the last 7 digits of the phone (`phoneKey`), because the same
   Lebanese number gets written `+961 71 …` and `71 …`. Two different women with

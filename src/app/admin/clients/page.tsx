@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { money, moneyOrDash } from "@/lib/format";
 import { photoUrl } from "@/lib/photos";
-import { totalsOf, type Client, type Item, type Settings } from "@/lib/types";
+import { feePctOf, totalsOf, type Client, type Item, type Settings } from "@/lib/types";
 import {
   Button,
   Card,
@@ -40,8 +40,11 @@ export default function ClientsPage() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  /** The service fee, so the figure here matches the client's own page. */
-  const [feePct, setFeePct] = useState(0);
+  /**
+   * The service fee from Settings, so the figure here matches the client's
+   * own page. A client carrying their own rate is charged that instead.
+   */
+  const [defaultFeePct, setDefaultFeePct] = useState(0);
 
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -68,7 +71,11 @@ export default function ClientsPage() {
     }
     setClients((c.data ?? []) as Client[]);
     setItems((i.data ?? []) as ItemRow[]);
-    if (s.data) setFeePct(Number((s.data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0));
+    if (s.data) {
+      setDefaultFeePct(
+        Number((s.data as Pick<Settings, "service_fee_pct">).service_fee_pct ?? 0),
+      );
+    }
   }
 
   useEffect(() => {
@@ -200,7 +207,7 @@ export default function ClientsPage() {
           {visibleClients.length > 0 && (
             <ul className="space-y-2.5">
               {visibleClients.map((c) => {
-                const totals = totalsOf(byClient.get(c.id) ?? [], feePct);
+                const totals = totalsOf(byClient.get(c.id) ?? [], feePctOf(c, defaultFeePct));
                 return (
                   <li key={c.id}>
                     <Link

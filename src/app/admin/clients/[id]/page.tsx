@@ -13,6 +13,7 @@ import { PhotoField } from "@/components/photo-field";
 import {
   BUY_CURRENCIES,
   CURRENCY_SYMBOL,
+  feePctOf,
   isClosed,
   totalsOf,
   toUsd,
@@ -68,8 +69,14 @@ export default function ClientPage() {
    */
   const [rates, setRates] = useState({ eur: 1.08, sar: 0.2667 });
 
-  /** The service fee percentage from Settings, charged on this client's total. */
-  const [feePct, setFeePct] = useState(0);
+  /**
+   * The service fee percentage from Settings — what this client is charged
+   * unless they carry one of their own. See feePctOf().
+   */
+  const [defaultFeePct, setDefaultFeePct] = useState(0);
+  const [editingFee, setEditingFee] = useState(false);
+  const [feeDraft, setFeeDraft] = useState("");
+  const [busyFee, setBusyFee] = useState(false);
 
   const [others, setOthers] = useState<Client[]>([]);
   const [merging, setMerging] = useState(false);
@@ -110,7 +117,7 @@ export default function ClientPage() {
     if (s) {
       const row = s as Pick<Settings, "rate_eur" | "rate_sar" | "service_fee_pct">;
       setRates({ eur: Number(row.rate_eur), sar: Number(row.rate_sar) });
-      setFeePct(Number(row.service_fee_pct ?? 0));
+      setDefaultFeePct(Number(row.service_fee_pct ?? 0));
     }
 
     setLoading(false);
@@ -119,6 +126,10 @@ export default function ClientPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** What this client actually pays: their own rate, or the one from Settings. */
+  const feePct = feePctOf(client, defaultFeePct);
+  const ownFee = client?.service_fee_pct !== null && client?.service_fee_pct !== undefined;
 
   const totals = useMemo(() => totalsOf(items, feePct), [items, feePct]);
 
@@ -184,6 +195,36 @@ export default function ClientPage() {
 
     setClient({ ...client, address: value, map_url: map });
     setEditingAddress(false);
+  }
+
+  /**
+   * An empty box means "follow Settings", which is null and not zero: a client
+   * set to 0 pays no fee while everybody else still does, so the two answers
+   * cannot share a value.
+   */
+  function draftPct(): number | null {
+    const typed = toNumber(feeDraft);
+    if (typed === null) return null;
+    return Math.min(100, Math.max(0, typed));
+  }
+
+  async function saveFee(next: number | null) {
+    if (!client) return;
+
+    setBusyFee(true);
+    const { error } = await supabaseBrowser()
+      .from("clients")
+      .update({ service_fee_pct: next })
+      .eq("id", client.id);
+
+    setBusyFee(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setClient({ ...client, service_fee_pct: next });
+    setEditingFee(false);
   }
 
   async function resetToken() {
@@ -333,6 +374,73 @@ export default function ClientPage() {
         />
         <Stat label={t("item.profit")} value={money(totals.profit)} tone="private" />
       </div>
+
+      {/* ----------------------------------------------------- service fee */}
+      <Card>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-stone-700">{t("client.fee")}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">{t("client.feeHint")}</p>
+          </div>
+          {!editingFee && (
+            <Button
+              variant="ghost"
+              className="shrink-0"
+              onClick={() => {
+                setFeeDraft(ownFee ? String(client.service_fee_pct) : "");
+                setEditingFee(true);
+              }}
+            >
+              {t("common.edit")}
+            </Button>
+          )}
+        </div>
+
+        {editingFee ? (
+          <div className="mt-3 space-y-2.5">
+            <Field label={t("client.feePct")} hint={t("client.feePctHint")}>
+              <div className="w-28">
+                <Input
+                  autoFocus
+                  type="number"
+                  inputMode="decimal"
+                  step="0.5"
+                  min="0"
+                  max="100"
+                  dir="ltr"
+                  placeholder={String(defaultFeePct)}
+                  value={feeDraft}
+                  onChange={(e) => setFeeDraft(e.target.value)}
+                  onWheel={(e) => e.currentTarget.blur()}
+                />
+              </div>
+            </Field>
+
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={busyFee} onClick={() => saveFee(draftPct())}>
+                {busyFee ? t("common.saving") : t("common.save")}
+              </Button>
+              {ownFee && (
+                <Button variant="secondary" disabled={busyFee} onClick={() => saveFee(null)}>
+                  {t("client.feeUseDefault")}
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setEditingFee(false)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2.5 flex items-baseline gap-2">
+            <span dir="ltr" className="text-lg font-semibold tabular-nums text-ink">
+              {feePct}%
+            </span>
+            <span className="text-sm text-stone-500">
+              {ownFee ? t("client.feeOwn") : t("client.feeDefault")}
+            </span>
+          </p>
+        )}
+      </Card>
 
       {/* ------------------------------------------------------ share link */}
       <Card>

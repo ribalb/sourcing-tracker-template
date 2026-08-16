@@ -58,6 +58,12 @@ export type Client = {
   /** The pin that goes with it. A map link, never anything else — see lib/maps.ts. */
   map_url: string | null;
   note: string | null;
+  /**
+   * This client's own service fee percentage, or null to be charged the one
+   * in Settings. 0 is a real answer — it means this client pays no fee — so
+   * "not set" has to be null and not zero.
+   */
+  service_fee_pct: number | null;
   token: string;
   created_at: string;
 };
@@ -200,6 +206,13 @@ export type Totals = {
   items: number;
   /** The service fee in dollars. Zero when no fee is set. */
   fee: number;
+  /**
+   * The percentages actually charged inside this total, without repeats.
+   * One client always gives one; a figure covering several clients gives
+   * as many as differ, so a label can say "(10%)" when they all agree and
+   * stay silent rather than lie when they do not. See feeLabel().
+   */
+  feePcts: number[];
   /** What the client owes in all: items plus fee. */
   billed: number;
   cost: number;
@@ -210,10 +223,11 @@ export type Totals = {
 };
 
 /**
- * `feePct` is the percentage from Settings — 10 for 10%. The fee is charged
- * on the items that are actually billed, so cancelling an item removes its
- * share of it too. It counts as income: it is inside `billed`, and therefore
- * inside `profit` and `balance`.
+ * `feePct` is the percentage this client is charged — 10 for 10%. It comes
+ * from Settings unless the client carries their own; feePctOf() decides.
+ * The fee is charged on the items that are actually billed, so cancelling an
+ * item removes its share of it too. It counts as income: it is inside
+ * `billed`, and therefore inside `profit` and `balance`.
  */
 export function totalsOf(
   items: Pick<Item, "status" | "price" | "cost" | "deposit">[],
@@ -241,6 +255,7 @@ export function totalsOf(
   return {
     items: priced,
     fee,
+    feePcts: fee > 0 ? [Number(feePct)] : [],
     billed,
     cost,
     profit: billed - cost,
@@ -248,4 +263,79 @@ export function totalsOf(
     balance: billed - deposits,
     count: items.length,
   };
+}
+
+/**
+ * The percentage a client is charged: their own if they have one, otherwise
+ * the one from Settings. Zero is a real rate — a client set to 0 pays no fee
+ * even while everyone else does — so only null falls back.
+ */
+export function feePctOf(
+  client: { service_fee_pct?: number | null } | null | undefined,
+  settingsPct: number | null | undefined,
+): number {
+  const own = client?.service_fee_pct;
+  if (own !== null && own !== undefined) return Number(own);
+  return Number(settingsPct ?? 0);
+}
+
+/**
+ * Totals over items belonging to several clients, each possibly charged a
+ * different percentage.
+ *
+ * The fee is a percentage of one client's own items, so it can only be worked
+ * out per client and then added up. Applying one blended rate to the grand
+ * total would be wrong the moment two clients differ, and quietly wrong —
+ * every figure would still look plausible.
+ */
+export function totalsAcross<T extends Pick<Item, "status" | "price" | "cost" | "deposit">>(
+  items: T[],
+  clientOf: (item: T) => string,
+  pctOf: (clientId: string) => number | null | undefined,
+): Totals {
+  const groups = new Map<string, T[]>();
+  for (const it of items) {
+    const key = clientOf(it);
+    const list = groups.get(key);
+    if (list) list.push(it);
+    else groups.set(key, [it]);
+  }
+
+  const sum: Totals = {
+    items: 0,
+    fee: 0,
+    feePcts: [],
+    billed: 0,
+    cost: 0,
+    profit: 0,
+    deposits: 0,
+    balance: 0,
+    count: items.length,
+  };
+
+  const pcts = new Set<number>();
+
+  for (const [id, list] of groups) {
+    const t = totalsOf(list, pctOf(id));
+    sum.items += t.items;
+    sum.fee += t.fee;
+    sum.billed += t.billed;
+    sum.cost += t.cost;
+    sum.profit += t.profit;
+    sum.deposits += t.deposits;
+    sum.balance += t.balance;
+    for (const p of t.feePcts) pcts.add(p);
+  }
+
+  sum.feePcts = [...pcts].sort((a, b) => a - b);
+  return sum;
+}
+
+/**
+ * "Service fee (10%)" while one rate is in play, plain "Service fee" once
+ * several are. A single percentage printed over a mixture of clients would
+ * read as the rate the fee was worked out at, and it would not be.
+ */
+export function feeLabel(base: string, pcts: number[]): string {
+  return pcts.length === 1 ? `${base} (${pcts[0]}%)` : base;
 }
